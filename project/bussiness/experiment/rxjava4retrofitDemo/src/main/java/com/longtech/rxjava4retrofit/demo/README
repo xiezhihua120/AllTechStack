@@ -1,0 +1,41 @@
+官网教程
+https://github.com/ReactiveX/RxJava
+https://github.com/ReactiveX/RxAndroid
+https://square.github.io/retrofit/
+https://github.com/liujingxing/RxLife (解决内存泄漏问题)
+
+1、Android Retrofit2.0+RxJava3.0 基本使用
+https://blog.csdn.net/ezconn/article/details/109224878
+
+2、Android Retrofit + RxJava使用详解
+https://www.jianshu.com/p/021a2c6e128b
+
+3、Android 教你一步步搭建MVP+Retrofit+RxJava网络请求架构
+https://www.jianshu.com/p/7b839b7c5884
+
+4、Carson带你学Android：RxJava、Retrofit联合使用汇总(含实例教程)
+https://www.jianshu.com/p/2c54f9ccd52f
+
+5、小白能看懂的MVP+RXjava+Retrofit2详细讲解
+https://www.jianshu.com/p/426864584518
+
+6、RxLife 史上最优雅的管理RxJava生命周期
+https://www.jianshu.com/p/e63849a7de3d
+
+./example1
+
+./example2
+
+./example3
+
+./example4
+
+./example5
+
+./example6
+
+./example7
+
+./example8
+
+./example9

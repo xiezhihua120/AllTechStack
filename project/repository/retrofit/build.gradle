@@ -1,0 +1,7 @@
+apply from: rootDir.getAbsolutePath() + "/project/repository/repository_base.gradle"
+
+dependencies {
+    api deps.squareup.retrofit.runtime
+    api deps.squareup.retrofit.gsonConverter
+    api deps.squareup.retrofit.rxjava2Adapter
+}

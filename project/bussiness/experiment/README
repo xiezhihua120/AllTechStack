@@ -1,0 +1,17 @@
+1、复制demo工程为xxx工程
+
+2、针对xxx工程，全局替换demo字符串
+
+3、在settings.gradle中添加
+   include ':xxx'
+   project(':xxx').projectDir = new File('project/bussiness/experiment/xxx')
+
+4、修改xxx工程中包含demo字符串的文件夹，修改为xxx文件夹
+
+5、Refactor->rename 重命名DemoAppLike、DemoApplication，修改为XxxAppLike、XxxApplication
+
+6、修改build.gradle中的combuild
+   combuild {
+       applicationName = 'com.longtech.demo.runalone.application.XxxApplication'
+       isRegisterCompoAuto = true
+   }

@@ -1,0 +1,42 @@
+apply from: rootDir.getAbsolutePath() + "/project/bussiness/components_base.gradle"
+
+// DDComponentForAndroid构建
+combuild {
+    applicationName = 'com.longtech.glide.demo.runalone.application.GlideApplication'
+    isRegisterCompoAuto = true
+}
+
+dependencies {
+// 以下依赖由当前库负责更新版本
+    api (deps.glide.runtime) {
+        exclude group: "androidx.annotation"
+        exclude group: "androidx.lifecycle"
+        exclude group: "androidx.arch.core"
+        exclude group: "androidx.vectordrawable"
+        exclude group: "androidx.core"
+        exclude group: "androidx.collection"
+        exclude group: "androidx.versionedparcelable"
+        exclude group: "androidx.fragment"
+    }
+    api (deps.glide.okhttp3Integration) {
+        exclude group: "androidx.annotation"
+        exclude group: "androidx.lifecycle"
+        exclude group: "androidx.arch.core"
+        exclude group: "androidx.vectordrawable"
+        exclude group: "androidx.core"
+        exclude group: "androidx.collection"
+        exclude group: "androidx.versionedparcelable"
+        exclude group: "androidx.fragment"
+    }
+    kapt deps.glide.compiler
+    api (deps.glide.transformations){
+        exclude group: "androidx.annotation"
+        exclude group: "androidx.lifecycle"
+        exclude group: "androidx.arch.core"
+        exclude group: "androidx.vectordrawable"
+        exclude group: "androidx.core"
+        exclude group: "androidx.collection"
+        exclude group: "androidx.versionedparcelable"
+        exclude group: "androidx.fragment"
+    }
+}

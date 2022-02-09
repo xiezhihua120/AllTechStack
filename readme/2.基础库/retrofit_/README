@@ -1,0 +1,832 @@
+https://square.github.io/retrofit/
+
+1、Android Retrofit详解
+https://www.jianshu.com/p/865e9ae667a0
+
+2、你真的会用Retrofit2吗?Retrofit2完全教程
+https://www.jianshu.com/p/308f3c54abdd
+
+3、Retrofit2.0使用总结
+https://www.jianshu.com/p/3e13e5d34531
+
+4、一定能看懂的 Retrofit 最详细的源码解析！
+https://www.jianshu.com/p/549ce509f7d9
+
+5、Retrofit2.0源码解析
+https://www.cnblogs.com/ghylzwsb/p/retrofit.html
+
+6、从架构角度看Retrofit的作用、原理和启示
+https://www.jianshu.com/p/f57b7cdb1c99
+
+7、Retrofit原理（四）：返回值的参数是怎么获取到的?
+https://blog.csdn.net/qq_37704124/article/details/100047711
+
+8、Retrofit 是如何获取返回值 Call<T> 中的类型 T, 以提供给 Gson 使用的？
+https://my.oschina.net/weichou/blog/3188766
+
+----------------------------------------------------------------------------------------------------
+
+拆解：
+okhttp3.Call.Factory                利用OKHttp中的Call.Factory来生成Call
+HttpUrl                             基础的baseUrl
+Converter.Factory                   对象序列化转化器，在OKHttp的onResponse中，将body转化为对象
+CallAdapter.Factory                 做一些同步异步、取消等操作的适配
+
+ServiceMethod                       保存了一个方法被调用时的实际处理过程
+RequestFactory                      读取方法中的参数注解，依次写入RequestBuilder中，最终得到一个okhttp3.Request
+HttpServiceMethod                   是ServerMethod的实例
+ParameterHandler                    参数处理器，对参数的操作进行了抽象，主要用来给RequestBuilder设置参数，得到okhttp3.Request
+
+OkHttpCall                          本质上是对OKHttpCall调用的封装，1、利用RequestFactory+OKHttpClient.callFactory生成一个call 2、执行call.enqueue 3、在onResponse中读取body 4、在onResponse中转化body为对象
+
+----------------------------------------------------------------------------------------------------
+
+核心原理：
+1、调用Retrofit.create动态读取一个service接口，为每一个方式生成一个调用逻辑代码，Object invoke(args);
+2、生成动态代理，让service接口在被调用时，实际执行第一步的逻辑代码，调用invoke函数
+3、invoke函数中支持CallAdapter转化，即实际先生成一个OKHttpCall，然后交给CallAdapter适配器，在适配器中完成Call的调用逻辑代码
+4、从上面来看，OKHttpCall的调用代码被适配了，但主体逻辑是没有变化的
+  A、首先根据注解参数，生成okhttp3.Request
+  B、其次根据OKHttpClient.callFactory构造一个Call
+  C、在Call.enqueue的返回结果中，读取body数据，并利用ResponseConverter转化数据为对象
+  D、最后回掉到客户端的CallBack中
+
+抽象过程：根据service类 -> 分析类的函数得到HttpServcieMethod调用逻辑 -> 生成一个proxy类 -> proxy类调用方法 -> 得到一个被适配过的OKHttpCall ->  OKHttpCall在调用时，底层执行了okhttp3.Call的核心逻辑
+        OKHttpCall得到response    ->   获取body   ->   利用Converter序列化body   ->  （有可能在OKHttpCall中做了线程转化）返回给应用层
+
+Q：Retrofit解决了什么问题
+OKHttp虽然是高性能的客户端网络请求框架，但是配置请求参数麻烦、不支持结果自动转化对象、不支持线程切换，使用起来还是比较麻烦的
+因此Retrofit针对这些问题，做了参数注解处理、结果转化、支持调用转化几个关键解决方案
+
+Q：Retrofit和OKHttp的关联
+Retrofit是对OKHttp应用层调用的封装，极大简化了OKHttp调用过程
+1、Retrofit应用层不存在request，是因为抽象到service的接口方法中了，因此service接口方法即请求
+2、Retrofit的call是OKHttpCall，并且在外层附加了一个CallAdapter适配
+3、OKHttp的结果，在Retrofit的OKHttpCall中onResponse里做了转化
+
+Q：Retrofit的概念总结
+Retrofit是什么？是底层封装了OKHttp请求的客户端对象，关键词是注解、动态代理、Call适配、Converter转化
+Service是什么？它的接口方法，是对请求的抽象。其中一个请求包括url、method、headers、body，都通过注解放置到方法注解和参数注解中了
+Service方法的返回值是什么？是被适配代理过的OKHttpCall对象
+Retrofit.create(Service.class)返回的是什么？是Service接口的实现类，即利用Proxy.newInstance得到的一个Proxy对象，Proxy对象的方法调用最终转入到HttpServiceMethod的invoke调用中
+
+Todo：Gson混淆配置、OKHttp混淆配置
+
+
+----------------------------------------------------------------------------------------------------
+Retrofit设计模式解析：
+1、Builder模式：参数较多时，利用该模式可以新增接口来接收新参数；而如果用函数方式，则需要新增函数来接受更多参数。 写SDK的时候，为了保障参数可以扩展，对象的构造细节隐藏起来，对客户端使用体验更加友好
+
+2、Factory模式：CallFactory、ConverterFactory、CallAdapterFactory、ExcutorFactory，工厂模式将对象构造细节放在产品构造方法内部，客户只需要提产品需求就行了
+
+3、Factory选择：客户端在初始化时控制了Factory的选择，而Factory在使用细节上已经形成了一定逻辑的上下文，从广义的角度可以认为将一些预留接口（Factory等）传入SDK的做法，属于策略模式
+
+4、HttpUrl构造：使用了Builder模式
+
+5、Request构造：使用了Builder模式
+public final class Request {
+  final HttpUrl url;
+  final String method;
+  final Headers headers;
+  final @Nullable RequestBody body;
+  final Map<Class<?>, Object> tags;
+}
+
+6、RequestBody：为什么没有使用Builder模式呢，因为参数是有一定排列组合逻辑的，一组排列代表了一种功能。例如，Body中写入String和Body中写入Byte[]是不一样的。所以使用Builder模式的一个大逻辑是，参数之间没有很大的互斥关系
+public static RequestBody create(@Nullable MediaType contentType, String content)
+public static RequestBody create(@Nullable MediaType contentType, final ByteString content)
+public static RequestBody create(@Nullable MediaType contentType, final byte[] content)
+public static RequestBody create(@Nullable MediaType contentType, final File file)
+
+7、okhttp3.Call.Factory工厂
+  interface Factory {
+    Call newCall(Request request);
+  }
+  分析：工厂可以传入特征对象，作为生产的关键因素，在okhttp中实际使用RealCall，一个Call的主要能力看其方法
+  A、request()用来记录方法
+  B、execute()用来同步执行请求
+  C、enqueue(responseCallback)用来执行异步请求
+  D、cancel()用来取消请求
+  E、isExcuted()用来判断是否已经请求
+  F、isCancel()用来判断是否已经取消
+  G、timeout()取出timeout超时信息
+
+8、Converter分析：无设计模式
+  public interface Converter<F, T> {
+      T convert(F value) throws IOException;
+  }
+
+9、Converter.Factory: 工厂模式
+  主要用来生产Converter的，有一下三种生产方式
+  public @Nullable Converter<ResponseBody, ?> responseBodyConverter(Type type, Annotation[] annotations, Retrofit retrofit)
+  public @Nullable Converter<?, RequestBody> requestBodyConverter(Type type, Annotation[] parameterAnnotations, Annotation[] methodAnnotations, Retrofit retrofit)
+  public @Nullable Converter<?, String> stringConverter(Type type, Annotation[] annotations, Retrofit retrofit)
+
+10、CallAdapter分析：模版方法 + 适配器模式
+  T adapt(Call<R> call);
+  分析：其中R类型变量是Response的类型，T代表call被适配过之后得到的类型，这里call是被适配的对象（继承自Call），T是适配的结果对象，也就是service方法调用返回的对象
+  适配器模式：参考https://www.runoob.com/design-pattern/adapter-pattern.html，已有对象，进入到新系统中，无法满足新系统接口
+  例如：AudioPlayer只能模仿mp3，却要求也能播放mp4和wav
+  因此，其中有三个元素AudioPlayer、AudioPlayerAdapter、MediaPlayer
+  public void play(String audioType, String fileName) {
+    // 区分类型mp3
+    Todo:
+    // 区分类型mp3
+    AudioPlayerAdapter.play(fileName)
+  }
+  AudioPlayerAdapter.play调用MediaPlayer.play
+
+9、CallAdapter.Factory: 工厂模式
+   public abstract @Nullable CallAdapter<R, T> get(Type returnType, Annotation[] annotations, Retrofit retrofit);
+
+10、ServiceMethod<T>: 无设计模式
+   A、XXService.class 等同于 Class<XXService>
+   B、abstract T invoke(Object[] args);
+   由于Servic的方法返回值是Call<R>，因此这里得到的类型T等同于Call<R>，当然后续会被适配，即T就是被适配过的Call<R>
+
+11、RequestFactory：无设计模式
+   static RequestFactory parseAnnotations(Retrofit retrofit, Method method) {
+       return new Builder(retrofit, method).build();
+   }
+   分析：就是针对每一个method，生产了一个RequestFactory，后续的RequestFactory会被构建成okhttp3的Request
+
+12、HttpServiceMethod：模版方法
+   HttpServiceMethod<ResponseT, ReturnT> extends ServiceMethod<ReturnT>
+   HttpServiceMethod(
+         RequestFactory requestFactory,
+         okhttp3.Call.Factory callFactory,
+         Converter<ResponseBody, ResponseT> responseConverter) {
+       this.requestFactory = requestFactory;
+       this.callFactory = callFactory;
+       this.responseConverter = responseConverter;
+   }
+
+   @Override
+   final @Nullable ReturnT invoke(Object[] args) {
+       Call<ResponseT> call = new OkHttpCall<>(requestFactory, args, callFactory, responseConverter);
+       return adapt(call, args);
+   }
+
+   protected abstract @Nullable ReturnT adapt(Call<ResponseT> call, Object[] args);
+
+   这里的HttpServiceMethod最核心的有两部分
+   一部分是成员变量：requestFactory、callFactory、responseConverter
+   一部分是核心的invoke方法：采用了模版方法模式，最原始的调用是一个OKHttpCall，然后得到一个被适配过的call对象
+   HttpServiceMethod的子类有：CallAdapted、SuspendForResponse、SuspendForBody
+
+   总结：HttpServiceMethod代表了service的每一个方法
+        A、方法被调用时其实是调用这里的invoke
+        B、方法被调用最重要的是返回值，本质得到一个OKHttpCall
+        C、由于客户端层面需要对Call做扩展，因此可以对OKHttpCall做了一个适配，权利留给了客户端
+
+
+
+13、OKHttpCall: 从广义角度看，使用了代理模式
+   分析：OKHttpCall的核心字段：requestFactory、callFactory、responseFactory、okhttp3.Call
+   重点：主要看生成okhttp3.Call 与 okhttp3.Call.Callback后处理的部分
+        A、okhttp3.Call
+              private okhttp3.Call createRawCall() throws IOException {
+                okhttp3.Call call = callFactory.newCall(requestFactory.create(args));
+                if (call == null) {
+                  throw new NullPointerException("Call.Factory returned null.");
+                }
+                return call;
+              }
+              其中requestFactory.create生成了okhttp3.Request，然后调用OKHttpClient.newCall得到okhttp3.Call
+
+        B、okhttp3.Call.Callback后处理
+              call.enqueue(
+                  new okhttp3.Callback() {
+                    @Override
+                    public void onResponse(okhttp3.Call call, okhttp3.Response rawResponse) {
+                      Response<T> response = parseResponse(rawResponse);
+                      callback.onResponse(OkHttpCall.this, response);
+                    }
+                  }
+              );
+
+              Response<T> parseResponse(okhttp3.Response rawResponse) throws IOException {
+                  ResponseBody rawBody = rawResponse.body();
+                  rawResponse = rawResponse.newBuilder()
+                                            .body(new NoContentResponseBody(rawBody.contentType(), rawBody.contentLength()))
+                                            .build();
+
+                  int code = rawResponse.code();
+                  ExceptionCatchingResponseBody catchingBody = new ExceptionCatchingResponseBody(rawBody);
+                  T body = responseConverter.convert(catchingBody);
+                  return Response.success(body, rawResponse);
+              }
+              分析：okhttp3.Call的回调中可以得到okhttp3.Response，可以从其中取出ResponseBody，其中ResponseBody.source()可以获取到服务端响应的数据
+                   上面将rawResponse拆分成两部分，一部分不包括body的rawResponse，一部分包括rawBody的catchingBody
+
+14、RequestFactory：建造者模式
+    核心目的是为了构造okhttp3.Request
+    okhttp3.Request create(Object[] args) throws IOException
+
+    手段是利用RequestFactory.Builder来解析注解信息
+    static RequestFactory parseAnnotations(Retrofit retrofit, Method method) {
+        return new Builder(retrofit, method).build();
+    }
+
+    细节部分主要是方法注解、参数注解的处理
+    for (Annotation annotation : methodAnnotations) {
+        parseMethodAnnotation(annotation);
+    }
+
+    int parameterCount = parameterAnnotationsArray.length;
+    parameterHandlers = new ParameterHandler<?>[parameterCount];
+    for (int p = 0, lastParameter = parameterCount - 1; p < parameterCount; p++) {
+        parameterHandlers[p] = parseParameter(p, parameterTypes[p], parameterAnnotationsArray[p], p == lastParameter);
+    }
+
+15、ParameterHandler：访问者模式参见下面分析
+
+16、CallFactory的实现：参见CallAdapter的分析
+
+17、CallAdapter的实现
+   Retrofit中的成员变量：final List<Converter.Factory> converterFactories;
+
+   List<CallAdapter.Factory> callAdapterFactories = new ArrayList<>(this.callAdapterFactories);
+   List<? extends CallAdapter.Factory> defaultCallAdapterFactories = platform.createDefaultCallAdapterFactories(callbackExecutor);
+   callAdapterFactories.addAll(defaultCallAdapterFactories);
+
+   @Override
+   List<? extends CallAdapter.Factory> createDefaultCallAdapterFactories(
+       @Nullable Executor callbackExecutor) {
+     return asList(
+         new CompletableFutureCallAdapterFactory(),
+         new DefaultCallAdapterFactory(callbackExecutor));
+   }
+
+   @Override
+   List<? extends CallAdapter.Factory> createDefaultCallAdapterFactories(
+       @Nullable Executor callbackExecutor) {
+     return singletonList(new DefaultCallAdapterFactory(callbackExecutor));
+   }
+
+    final class DefaultCallAdapterFactory extends CallAdapter.Factory {
+      private final @Nullable Executor callbackExecutor;
+
+      DefaultCallAdapterFactory(@Nullable Executor callbackExecutor) {
+        this.callbackExecutor = callbackExecutor;
+      }
+
+      @Override
+      public @Nullable CallAdapter<?, ?> get( Type returnType, Annotation[] annotations, Retrofit retrofit) {
+
+        final Type responseType = Utils.getParameterUpperBound(0, (ParameterizedType) returnType);
+        final Executor executor =Utils.isAnnotationPresent(annotations, SkipCallbackExecutor.class)? null: callbackExecutor;
+
+        return new CallAdapter<Object, Call<?>>() {
+          @Override
+          public Type responseType() {
+            return responseType;
+          }
+
+          @Override
+          public Call<Object> adapt(Call<Object> call) {
+            return executor == null ? call : new ExecutorCallbackCall<>(executor, call);
+          }
+        };
+      }
+
+      static final class ExecutorCallbackCall<T> implements Call<T> {
+        final Executor callbackExecutor;
+        final Call<T> delegate;
+
+        ExecutorCallbackCall(Executor callbackExecutor, Call<T> delegate) {
+          this.callbackExecutor = callbackExecutor;
+          this.delegate = delegate;
+        }
+
+        @Override
+        public void enqueue(final Callback<T> callback) {
+          Objects.requireNonNull(callback, "callback == null");
+
+          delegate.enqueue(
+              new Callback<T>() {
+                @Override
+                public void onResponse(Call<T> call, final Response<T> response) {
+                  callbackExecutor.execute(
+                      () -> {
+                        if (delegate.isCanceled()) {
+                          callback.onFailure(ExecutorCallbackCall.this, new IOException("Canceled"));
+                        } else {
+                          callback.onResponse(ExecutorCallbackCall.this, response);
+                        }
+                      });
+                }
+
+                @Override
+                public void onFailure(Call<T> call, final Throwable t) {
+                  callbackExecutor.execute(() -> callback.onFailure(ExecutorCallbackCall.this, t));
+                }
+              });
+        }
+
+        @Override
+        public boolean isExecuted() {
+          return delegate.isExecuted();
+        }
+
+        @Override
+        public Response<T> execute() throws IOException {
+          return delegate.execute();
+        }
+
+        @Override
+        public void cancel() {
+          delegate.cancel();
+        }
+
+        @Override
+        public boolean isCanceled() {
+          return delegate.isCanceled();
+        }
+
+        @SuppressWarnings("CloneDoesntCallSuperClone") // Performing deep clone.
+        @Override
+        public Call<T> clone() {
+          return new ExecutorCallbackCall<>(callbackExecutor, delegate.clone());
+        }
+
+        @Override
+        public Request request() {
+          return delegate.request();
+        }
+
+        @Override
+        public Timeout timeout() {
+          return delegate.timeout();
+        }
+      }
+    }
+    分析：这里的逻辑比较绕，核心逻辑是吧Call<R>转化成了一个ExecutorCallbackCall
+         A、ExecutorCallbackCall继承自Call
+         B、ExecutorCallbackCall把响应转交给了callbackExecutor
+
+        private static final class MainThreadExecutor implements Executor {
+            static final Executor INSTANCE = new MainThreadExecutor();
+
+            private final Handler handler = new Handler(Looper.getMainLooper());
+
+            @Override
+            public void execute(Runnable r) {
+                handler.post(r);
+            }
+        }
+
+    分析：CallAdapter<ResponseT, ReturnT>，这里的两个范型是什么决定的呢?
+         A、第一个是客户端的service方法决定的，即Call<ResponseT>
+         B、第二个是客户端自定义的CallAdapter决定的，例如DefaultCallAdapterFactory.CallAdapter, 最终T是service.fun得到的返回值
+
+         public interface CallAdapter<R, T> {
+           T adapt(Call<R> call);
+         }
+
+18、ResponseConverter的实现
+    -> retrofit.nextResponseBodyConverter -> retrofit.responseBodyConverter
+    -> HttpServiceMethod.createResponseConverter
+    -> CallAdapted.responseConverter -> HttpServiceMethod.invoke -> OkHttpCall.responseConverter
+
+
+    // Make a defensive copy of the converters.
+    List<? extends Converter.Factory> defaultConverterFactories = platform.createDefaultConverterFactories();
+    int defaultConverterFactoriesSize = defaultConverterFactories.size();
+    List<Converter.Factory> converterFactories = new ArrayList<>(1 + this.converterFactories.size() + defaultConverterFactoriesSize);
+
+    // Add the built-in converter factory first. This prevents overriding its behavior but also
+    // ensures correct behavior when using converters that consume all types.
+    converterFactories.add(new BuiltInConverters());
+    converterFactories.addAll(this.converterFactories);
+    converterFactories.addAll(defaultConverterFactories);
+
+    public interface Converter<F, T> {
+      @Nullable
+      T convert(F value) throws IOException;
+    }
+    分析：Converter主要用来把ResponseBody value转化为目标值，里面两个范型分别是From，To
+
+----------------------------------------------------------------------------------------------------
+Retrofit中的反射
+1、对service所有的method，生成HttpServiceMethod
+      for (Method method : service.getDeclaredMethods()) {
+        if (!platform.isDefaultMethod(method) && !Modifier.isStatic(method.getModifiers())) {
+          loadServiceMethod(method);
+        }
+      }
+
+2、对每一个service的method，获取注解
+    Builder(Retrofit retrofit, Method method) {
+      this.retrofit = retrofit;
+      this.method = method;
+      this.methodAnnotations = method.getAnnotations();                             // 取得方法注解
+      this.parameterTypes = method.getGenericParameterTypes();                      // 取得参数的类型
+      this.parameterAnnotationsArray = method.getParameterAnnotations();            // 取得参数的所有注解
+    }
+
+3、处理每一个method的方法注解，转化成请求信息
+    for (Annotation annotation : methodAnnotations) {
+        parseMethodAnnotation(annotation);
+    }
+
+    private void parseMethodAnnotation(Annotation annotation) {
+      if (annotation instanceof DELETE) {
+        parseHttpMethodAndPath("DELETE", ((DELETE) annotation).value(), false);
+      } else if (annotation instanceof GET) {
+        parseHttpMethodAndPath("GET", ((GET) annotation).value(), false);
+      } else if (annotation instanceof HEAD) {
+        parseHttpMethodAndPath("HEAD", ((HEAD) annotation).value(), false);
+      } else if (annotation instanceof PATCH) {
+        parseHttpMethodAndPath("PATCH", ((PATCH) annotation).value(), true);
+      } else if (annotation instanceof POST) {
+        parseHttpMethodAndPath("POST", ((POST) annotation).value(), true);
+      } else if (annotation instanceof PUT) {
+        parseHttpMethodAndPath("PUT", ((PUT) annotation).value(), true);
+      } else if (annotation instanceof OPTIONS) {
+        parseHttpMethodAndPath("OPTIONS", ((OPTIONS) annotation).value(), false);
+      } else if (annotation instanceof HTTP) {
+        HTTP http = (HTTP) annotation;
+        parseHttpMethodAndPath(http.method(), http.path(), http.hasBody());
+      } else if (annotation instanceof retrofit2.http.Headers) {
+        String[] headersToParse = ((retrofit2.http.Headers) annotation).value();
+        headers = parseHeaders(headersToParse);
+      } else if (annotation instanceof Multipart) {
+        isMultipart = true;
+      } else if (annotation instanceof FormUrlEncoded) {
+        isFormEncoded = true;
+      }
+    }
+    分析：因为这些注解是互斥的，所以只会有一种被选择，这里主要是取出了relativeUrl、method、relativeUrlParams
+
+4-pre、ParameterHandler：访问者模式
+abstract class ParameterHandler<T> {
+  abstract void apply(RequestBuilder builder, @Nullable T value) throws IOException;
+
+  final ParameterHandler<Iterable<T>> iterable() {
+    return new ParameterHandler<Iterable<T>>() {
+      @Override
+      void apply(RequestBuilder builder, @Nullable Iterable<T> values) throws IOException {
+        if (values == null) return; // Skip null values.
+
+        for (T value : values) {
+          ParameterHandler.this.apply(builder, value);
+        }
+      }
+    };
+  }
+
+  final ParameterHandler<Object> array() {
+    return new ParameterHandler<Object>() {
+      @Override
+      void apply(RequestBuilder builder, @Nullable Object values) throws IOException {
+        if (values == null) return; // Skip null values.
+
+        for (int i = 0, size = Array.getLength(values); i < size; i++) {
+          ParameterHandler.this.apply(builder, (T) Array.get(values, i));
+        }
+      }
+    };
+  }
+  分析：本质上就是让value赋值到RequestBuilder里，最终生成okhttp3.Request，这里就是对每一个赋值过程的抽象
+       其中参数的值args是从动态代理中传递过来的，通过参数索引args[i]，能够对齐找到每一个Paramterhandler[i]
+
+  访问者模式：参考 https://www.runoob.com/design-pattern/visitor-pattern.html
+       目标：把稳定的数据结构、多变的数据操作分离
+       public interface ComputerPart {
+          public void accept(ComputerPartVisitor computerPartVisitor);
+       }
+
+       public class Keyboard  implements ComputerPart {
+          @Override
+          public void accept(ComputerPartVisitor computerPartVisitor) {
+             computerPartVisitor.visit(this);
+          }
+       }
+
+       public class Monitor  implements ComputerPart {
+          @Override
+          public void accept(ComputerPartVisitor computerPartVisitor) {
+             computerPartVisitor.visit(this);
+          }
+       }
+
+       public class Computer implements ComputerPart {
+          ComputerPart[] parts;
+          public Computer(){
+             parts = new ComputerPart[] {new Mouse(), new Keyboard(), new Monitor()};
+          }
+
+          @Override
+          public void accept(ComputerPartVisitor computerPartVisitor) {
+             for (int i = 0; i < parts.length; i++) {
+                parts[i].accept(computerPartVisitor);
+             }
+             computerPartVisitor.visit(this);
+          }
+       }
+
+       public interface ComputerPartVisitor {
+          public void visit(Computer computer);
+          public void visit(Mouse mouse);
+          public void visit(Keyboard keyboard);
+          public void visit(Monitor monitor);
+       }
+       拆解：访问者、被访问者；其中访问者需要操作被访问者的数据结构
+           public class OnePart implements Part {
+              @Override
+              public void accept(Visitor visitor) {
+                 visitor.visit(this);
+              }
+           }
+
+           public interface Visitor {
+              public void visit(OnePart part);
+           }
+
+
+           最基本的visitor.visit(part), 多了一部分part.accept解决了什么问题
+           分析：应该是控制权交给了part，因为part可以决定visitor到底要不要访问，被访问者可以控制一下自己要不要被访问
+                被访问者的主动权更大了，看起来是个不错的考虑！
+       联系：ParamHandler就是被访问者，其中封装的不变的逻辑；访问者是ReuqestBuilder和value，它们是多变的
+
+4、处理每一个方法的参数注解，转化成query、header、body、part等信息
+    int parameterCount = parameterAnnotationsArray.length;
+    parameterHandlers = new ParameterHandler<?>[parameterCount];
+    for (int p = 0, lastParameter = parameterCount - 1; p < parameterCount; p++) {
+        // 参数索引，参数类型，参数的注解，是否最后一个参数
+        parameterHandlers[p] = parseParameter(p, parameterTypes[p], parameterAnnotationsArray[p], p == lastParameter);
+    }
+
+    private @Nullable ParameterHandler<?> parseParameter(int p, Type parameterType, @Nullable Annotation[] annotations, boolean allowContinuation) {
+        ParameterHandler<?> result = null;
+        if (annotations != null) {
+            for (Annotation annotation : annotations) {
+                ParameterHandler<?> annotationAction = parseParameterAnnotation(p, parameterType, annotations, annotation);
+                result = annotationAction;
+            }
+        }
+        return result;
+    }
+
+    private ParameterHandler<?> parseParameterAnnotation(int p, Type type, Annotation[] annotations, Annotation annotation) {
+      if (annotation instanceof Url) {
+        // Todo: 处理@Url，RequestBuilder.setRelativeUrl(value)，
+        if (type == HttpUrl.class|| type == String.class|| type == URI.class|| (type instanceof Class && "android.net.Uri".equals(((Class<?>) type).getName()))) {
+          return new ParameterHandler.RelativeUrl(method, p);
+        }
+      } else if (annotation instanceof Path) {
+        // Todo: 处理@Path，builder.addPathParam(name, valueConverter.convert(value), encoded);      path其实是分段的路径名称
+        Path path = (Path) annotation;
+        String name = path.value();
+        Converter<?, String> converter = retrofit.stringConverter(type, annotations);
+        return new ParameterHandler.Path<>(method, p, name, converter, path.encoded());
+      } else if (annotation instanceof Query) {
+        // Todo: 处理@Query，urlBuilder.addQueryParameter(name, value);
+        Query query = (Query) annotation;
+        String name = query.value();
+        boolean encoded = query.encoded();
+
+        Class<?> rawParameterType = Utils.getRawType(type);
+        gotQuery = true;
+        if (Iterable.class.isAssignableFrom(rawParameterType)) {
+          ParameterizedType parameterizedType = (ParameterizedType) type;
+          Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
+          Converter<?, String> converter = retrofit.stringConverter(iterableType, annotations);
+          return new ParameterHandler.Query<>(name, converter, encoded).iterable();
+        } else if (rawParameterType.isArray()) {
+          Class<?> arrayComponentType = boxIfPrimitive(rawParameterType.getComponentType());
+          Converter<?, String> converter = retrofit.stringConverter(arrayComponentType, annotations);
+          return new ParameterHandler.Query<>(name, converter, encoded).array();
+        } else {
+          Converter<?, String> converter = retrofit.stringConverter(type, annotations);
+          return new ParameterHandler.Query<>(name, converter, encoded);
+        }
+
+      } else if (annotation instanceof QueryName) {
+        // Todo: 处理@QueryName，builder.addQueryParam(nameConverter.convert(value), null, encoded);
+        QueryName query = (QueryName) annotation;
+        boolean encoded = query.encoded();
+
+        Class<?> rawParameterType = Utils.getRawType(type);
+        gotQueryName = true;
+        if (Iterable.class.isAssignableFrom(rawParameterType)) {
+          ParameterizedType parameterizedType = (ParameterizedType) type;
+          Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
+          Converter<?, String> converter = retrofit.stringConverter(iterableType, annotations);
+          return new ParameterHandler.QueryName<>(converter, encoded).iterable();
+        } else if (rawParameterType.isArray()) {
+          Class<?> arrayComponentType = boxIfPrimitive(rawParameterType.getComponentType());
+          Converter<?, String> converter = retrofit.stringConverter(arrayComponentType, annotations);
+          return new ParameterHandler.QueryName<>(converter, encoded).array();
+        } else {
+          Converter<?, String> converter = retrofit.stringConverter(type, annotations);
+          return new ParameterHandler.QueryName<>(converter, encoded);
+        }
+
+      } else if (annotation instanceof QueryMap) {
+        // Todo: 处理@QueryMap，for (Map.Entry<String, T> entry : value.entrySet()) builder.addQueryParam(entryKey, convertedEntryValue, encoded);
+        Class<?> rawParameterType = Utils.getRawType(type);
+        Type mapType = Utils.getSupertype(type, rawParameterType, Map.class);
+        ParameterizedType parameterizedType = (ParameterizedType) mapType;
+        Type keyType = Utils.getParameterUpperBound(0, parameterizedType);
+        Type valueType = Utils.getParameterUpperBound(1, parameterizedType);
+        Converter<?, String> valueConverter = retrofit.stringConverter(valueType, annotations);
+        return new ParameterHandler.QueryMap<>(method, p, valueConverter, ((QueryMap) annotation).encoded());
+
+      } else if (annotation instanceof Header) {
+        // Todo: 处理@Header，builder.addHeader(name, headerValue);
+        Header header = (Header) annotation;
+        String name = header.value();
+
+        Class<?> rawParameterType = Utils.getRawType(type);
+        if (Iterable.class.isAssignableFrom(rawParameterType)) {
+          ParameterizedType parameterizedType = (ParameterizedType) type;
+          Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
+          Converter<?, String> converter = retrofit.stringConverter(iterableType, annotations);
+          return new ParameterHandler.Header<>(name, converter).iterable();
+        } else if (rawParameterType.isArray()) {
+          Class<?> arrayComponentType = boxIfPrimitive(rawParameterType.getComponentType());
+          Converter<?, String> converter = retrofit.stringConverter(arrayComponentType, annotations);
+          return new ParameterHandler.Header<>(name, converter).array();
+        } else {
+          Converter<?, String> converter = retrofit.stringConverter(type, annotations);
+          return new ParameterHandler.Header<>(name, converter);
+        }
+
+      } else if (annotation instanceof HeaderMap) {
+        // Todo: 处理@HeaderMap，for (Map.Entry<String, T> entry : value.entrySet()) builder.addHeader(headerName, valueConverter.convert(headerValue));
+        if (type == Headers.class) {
+          return new ParameterHandler.Headers(method, p);
+        }
+
+        validateResolvableType(p, type);
+        Class<?> rawParameterType = Utils.getRawType(type);
+        Type mapType = Utils.getSupertype(type, rawParameterType, Map.class);
+        ParameterizedType parameterizedType = (ParameterizedType) mapType;
+        Type keyType = Utils.getParameterUpperBound(0, parameterizedType);
+        Type valueType = Utils.getParameterUpperBound(1, parameterizedType);
+        Converter<?, String> valueConverter = retrofit.stringConverter(valueType, annotations);
+
+        return new ParameterHandler.HeaderMap<>(method, p, valueConverter);
+
+      } else if (annotation instanceof Field) {
+        // Todo: 处理@Field， builder.addFormField(name, fieldValue, encoded);
+        Field field = (Field) annotation;
+        String name = field.value();
+        boolean encoded = field.encoded();
+
+        Class<?> rawParameterType = Utils.getRawType(type);
+        if (Iterable.class.isAssignableFrom(rawParameterType)) {
+          ParameterizedType parameterizedType = (ParameterizedType) type;
+          Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
+          Converter<?, String> converter = retrofit.stringConverter(iterableType, annotations);
+          return new ParameterHandler.Field<>(name, converter, encoded).iterable();
+        } else if (rawParameterType.isArray()) {
+          Class<?> arrayComponentType = boxIfPrimitive(rawParameterType.getComponentType());
+          Converter<?, String> converter = retrofit.stringConverter(arrayComponentType, annotations);
+          return new ParameterHandler.Field<>(name, converter, encoded).array();
+        } else {
+          Converter<?, String> converter = retrofit.stringConverter(type, annotations);
+          return new ParameterHandler.Field<>(name, converter, encoded);
+        }
+
+      } else if (annotation instanceof FieldMap) {
+        // Todo: 处理@FieldMap， for (Map.Entry<String, T> entry : value.entrySet()) builder.addFormField(entryKey, fieldEntry, encoded);
+
+        Class<?> rawParameterType = Utils.getRawType(type);
+        Type mapType = Utils.getSupertype(type, rawParameterType, Map.class);
+
+        ParameterizedType parameterizedType = (ParameterizedType) mapType;
+        Type keyType = Utils.getParameterUpperBound(0, parameterizedType);
+        Type valueType = Utils.getParameterUpperBound(1, parameterizedType);
+        Converter<?, String> valueConverter = retrofit.stringConverter(valueType, annotations);
+        return new ParameterHandler.FieldMap<>(method, p, valueConverter, ((FieldMap) annotation).encoded());
+
+      } else if (annotation instanceof Part) {
+        // Todo: 处理@Part， builder.addPart(MultipartBody.Part); 或者 builder.addPart(headers, body);
+        Part part = (Part) annotation;
+
+        String partName = part.value();
+        Class<?> rawParameterType = Utils.getRawType(type);
+        if (partName.isEmpty()) {
+          if (Iterable.class.isAssignableFrom(rawParameterType)) {
+            ParameterizedType parameterizedType = (ParameterizedType) type;
+            Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
+            return ParameterHandler.RawPart.INSTANCE.iterable();
+          } else if (rawParameterType.isArray()) {
+            Class<?> arrayComponentType = rawParameterType.getComponentType();
+            return ParameterHandler.RawPart.INSTANCE.array();
+          } else if (MultipartBody.Part.class.isAssignableFrom(rawParameterType)) {
+            return ParameterHandler.RawPart.INSTANCE;
+          } else {
+          }
+        } else {
+          Headers headers =Headers.of("Content-Disposition","form-data; name=\"" + partName + "\"","Content-Transfer-Encoding",part.encoding());
+
+          if (Iterable.class.isAssignableFrom(rawParameterType)) {
+            ParameterizedType parameterizedType = (ParameterizedType) type;
+            Type iterableType = Utils.getParameterUpperBound(0, parameterizedType);
+            Converter<?, RequestBody> converter = retrofit.requestBodyConverter(iterableType, annotations, methodAnnotations);
+            return new ParameterHandler.Part<>(method, p, headers, converter).iterable();
+          } else if (rawParameterType.isArray()) {
+            Class<?> arrayComponentType = boxIfPrimitive(rawParameterType.getComponentType());
+            Converter<?, RequestBody> converter = retrofit.requestBodyConverter(arrayComponentType, annotations, methodAnnotations);
+            return new ParameterHandler.Part<>(method, p, headers, converter).array();
+          } else if (MultipartBody.Part.class.isAssignableFrom(rawParameterType)) {
+          } else {
+            Converter<?, RequestBody> converter = retrofit.requestBodyConverter(type, annotations, methodAnnotations);
+            return new ParameterHandler.Part<>(method, p, headers, converter);
+          }
+        }
+
+      } else if (annotation instanceof PartMap) {
+        // Todo: 处理@PartMap, for (Map.Entry<String, T> entry : value.entrySet()) builder.addPart(headers, valueConverter.convert(entryValue));
+        Class<?> rawParameterType = Utils.getRawType(type);
+        if (!Map.class.isAssignableFrom(rawParameterType)) {
+          throw parameterError(method, p, "@PartMap parameter type must be Map.");
+        }
+        Type mapType = Utils.getSupertype(type, rawParameterType, Map.class);
+        ParameterizedType parameterizedType = (ParameterizedType) mapType;
+
+        Type keyType = Utils.getParameterUpperBound(0, parameterizedType);
+        Type valueType = Utils.getParameterUpperBound(1, parameterizedType);
+        Converter<?, RequestBody> valueConverter = retrofit.requestBodyConverter(valueType, annotations, methodAnnotations);
+
+        PartMap partMap = (PartMap) annotation;
+        return new ParameterHandler.PartMap<>(method, p, valueConverter, partMap.encoding());
+
+      } else if (annotation instanceof Body) {
+        // Todo: 处理@Body, builder.setBody(body);
+        Converter<?, RequestBody> converter;
+        try {
+          converter = retrofit.requestBodyConverter(type, annotations, methodAnnotations);
+        } catch (RuntimeException e) {
+          // Wide exception range because factories are user code.
+        }
+        return new ParameterHandler.Body<>(method, p, converter);
+
+      } else if (annotation instanceof Tag) {
+        Class<?> tagType = Utils.getRawType(type);
+        for (int i = p - 1; i >= 0; i--) {
+          ParameterHandler<?> otherHandler = parameterHandlers[i];
+        }
+        return new ParameterHandler.Tag<>(tagType);
+      }
+      return null; // Not a Retrofit annotation.
+    }
+
+5、根据一个RequestFactory得到一个HttpServiceMethod
+    static <ResponseT, ReturnT> HttpServiceMethod<ResponseT, ReturnT> parseAnnotations(Retrofit retrofit, Method method, RequestFactory requestFactory) {
+        Annotation[] annotations = method.getAnnotations();
+        Type adapterType = method.getGenericReturnType();
+        CallAdapter<ResponseT, ReturnT> callAdapter = createCallAdapter(retrofit, method, adapterType, annotations);
+        Type responseType = callAdapter.responseType();
+        Converter<ResponseBody, ResponseT> responseConverter = createResponseConverter(retrofit, method, responseType);
+        okhttp3.Call.Factory callFactory = retrofit.callFactory;
+        return new CallAdapted<>(requestFactory, callFactory, responseConverter, callAdapter);
+    }
+
+6、RequestFactory在create中将方法注解、参数注解信息，转化成了okhttp3.Request
+    okhttp3.Request create(Object[] args) throws IOException {
+        ParameterHandler<Object>[] handlers = (ParameterHandler<Object>[]) parameterHandlers;
+        int argumentCount = args.length;
+        RequestBuilder requestBuilder =new RequestBuilder(httpMethod,baseUrl,relativeUrl,headers,contentType,hasBody,isFormEncoded,isMultipart);
+        List<Object> argumentList = new ArrayList<>(argumentCount);
+        for (int p = 0; p < argumentCount; p++) {
+          argumentList.add(args[p]);
+          handlers[p].apply(requestBuilder, args[p]);
+        }
+        return requestBuilder.get().tag(Invocation.class, new Invocation(method, argumentList)).build();
+    }
+
+----------------------------------------------------------------------------------------------------
+
+Retrofit认知：
+
+-------------------------------外观层---------------------------------
+Retrofit
+
+
+
+-------------------------------请求层---------------------------------
+RequestFactory
+HttpServiceMehod
+RequestBuilder
+ParameterHandler
+-------------------------------响应层---------------------------------
+Converter.Factory
+Converter
+
+
+-------------------------------调用层---------------------------------
+CallAdapter.Factory
+CallAdapter
+
+
+-------------------------------通信层---------------------------------
+CallFactory
+OKHttpCall
+
+
+---------------------------------------------------------------------

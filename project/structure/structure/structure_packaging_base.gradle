@@ -1,0 +1,35 @@
+apply plugin: 'kotlin-android'
+android{
+
+    // 解决类重复问题
+    sourceSets {
+        main {
+            java {
+                exclude '**/module-info.class'
+            }
+        }
+    }
+
+
+    // 解决资源重复问题
+    packagingOptions {
+        exclude 'META-INF/rxjava.properties'
+        exclude 'META-INF/DEPENDENCIES'
+        exclude 'META-INF/NOTICE'
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/LICENSE.txt'
+        exclude 'META-INF/NOTICE.txt'
+        pickFirst 'lib/arm64-v8a/libc++_shared.so' //pdf
+        pickFirst 'lib/armeabi-v7a/libc++_shared.so'
+        pickFirst 'lib/armeabi-v7a/libavcodec.so'
+        pickFirst 'lib/armeabi-v7a/libavutil.so'
+        pickFirst 'lib/armeabi-v7a/libavformat.so'
+        pickFirst 'lib/armeabi-v7a/libswscale.so'
+        exclude 'META-INF/ASL2.0'
+        exclude("META-INF/*.kotlin_module")
+        exclude "**/module-info.class"
+        exclude "META-INF.versions.9.module-info"
+        exclude "META-INF/versions/9/*.class"
+        exclude "**/module-info.class"
+    }
+}

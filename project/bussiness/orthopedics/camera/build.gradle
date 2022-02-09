@@ -1,0 +1,14 @@
+apply from: rootDir.getAbsolutePath() + "/project/bussiness/components_base.gradle"
+apply plugin: 'kotlin-kapt'
+
+// DDComponentForAndroid构建
+combuild {
+    applicationName = 'com.longtech.camera.runalone.application.CameraApplication'
+    isRegisterCompoAuto = true
+}
+
+dependencies {
+    implementation 'com.longteck.stack:bind-library:1.0.20'
+    implementation 'com.longteck.stack:bind-annotation:1.0.20'
+    kapt 'com.longteck.stack:bind-processor:1.0.20'
+}

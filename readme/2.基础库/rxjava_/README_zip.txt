@@ -1,0 +1,6 @@
+多个Observable同时执行，回调到一个ZipCondinator的观察者中
+
+ZipCondinator要保障
+1、每个都正常调用了onNext得到结果，才返回
+2、如果有调用onError了，那么其他的全都失败，可以直接dispose
+3、如果有调用onComplete了，查看一下其他的Observable的工作是不是都调用了onComplete，全部调用了才真正onComplete

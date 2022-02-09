@@ -1,0 +1,2 @@
+apply from: rootDir.getAbsolutePath() + "/project/structure/structure/structure_base.gradle"
+apply from: rootDir.getAbsolutePath() + "/project/structure/structure/structure_packaging_base.gradle"

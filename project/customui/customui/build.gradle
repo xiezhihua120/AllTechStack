@@ -1,0 +1,7 @@
+apply from: rootDir.getAbsolutePath() + "/project/customui/customui/customui_base.gradle"
+
+// 框架模块，仅供上层依赖
+dependencies {
+    implementation 'com.longteck.stack:alertview:1.0.1'
+    implementation 'com.longteck.stack:idialog:1.0.1'
+}

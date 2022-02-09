@@ -1,0 +1,39 @@
+apply plugin: 'groovy'
+apply plugin: 'maven-publish'
+
+dependencies{
+    implementation gradleApi()
+    implementation localGroovy()
+    implementation 'org.javassist:javassist:3.20.0-GA'
+    implementation 'com.android.tools.build:gradle:3.1.2'
+    implementation 'com.android.tools.build:transform-api:1.5.0'
+    implementation 'commons-io:commons-io:2.5'
+}
+
+
+afterEvaluate {
+    publishing {
+        // 配置模块gradle.properties
+        publications {
+            release(MavenPublication) {
+                from components.java
+                groupId = GROUP_ID
+                artifactId = ARTIFACT_ID
+                version = VERSION
+            }
+        }
+
+        // 配置全局gradle.properties
+        repositories {
+            maven {
+                allowInsecureProtocol true
+                url = version.endsWith('SNAPSHOT') ? NEXUS_REPOSITORY_SNAPSHOT_URL : NEXUS_REPOSITORY_RELEASE_URL
+                credentials {
+                    username = NEXUS_MAVEN_USERNAME
+                    password = NEXUS_MAVEN_PASSWORD
+                }
+            }
+        }
+    }
+}
+

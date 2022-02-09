@@ -1,0 +1,18 @@
+apply from: rootDir.getAbsolutePath() + "/project/bussiness/components_base.gradle"
+apply plugin: 'com.longtech.iaspectj'
+
+// DDComponentForAndroid构建
+combuild {
+    applicationName = 'com.longtech.rxjava4retrofit.runalone.application.Rxjava4RetrofitApplication'
+    isRegisterCompoAuto = true
+}
+
+dependencies {
+    implementation 'com.squareup.okhttp3:okhttp:4.6.0'
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.retrofit2:adapter-rxjava3:2.9.0'
+    implementation 'io.reactivex.rxjava3:rxjava:3.0.0'
+    implementation 'io.reactivex.rxjava3:rxandroid:3.0.0'
+    implementation 'com.github.liujingxing.rxlife:rxlife-rxjava3:2.2.1'
+}

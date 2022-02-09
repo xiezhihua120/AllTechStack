@@ -1,0 +1,5 @@
+apply from: rootDir.getAbsolutePath() + "/project/bussiness/components_base.gradle"
+
+dependencies {
+    api project(':flutter')
+}

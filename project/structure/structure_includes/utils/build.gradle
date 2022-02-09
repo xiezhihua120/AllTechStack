@@ -1,0 +1,5 @@
+apply from: rootDir.getAbsolutePath() + "/project/structure/structure_includes/modules_base.gradle"
+
+dependencies {
+    api deps.google.gson
+}

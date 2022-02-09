@@ -1,0 +1,5 @@
+apply from: rootDir.getAbsolutePath() + "/project/customui/widgets_maven/widgets_maven_base.gradle"
+
+dependencies {
+    api fileTree(dir: 'libs', include: ['*.jar'])
+}

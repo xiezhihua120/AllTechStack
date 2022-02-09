@@ -1,0 +1,12 @@
+apply from: rootDir.getAbsolutePath() + "/project/bussiness/components_base.gradle"
+
+// DDComponentForAndroid构建
+combuild {
+    applicationName = 'com.longtech.rxjava.runalone.application.OKHttpApplication'
+    isRegisterCompoAuto = true
+}
+
+dependencies {
+    implementation 'io.reactivex.rxjava3:rxandroid:3.0.0'
+    implementation 'io.reactivex.rxjava3:rxjava:3.0.0'
+}

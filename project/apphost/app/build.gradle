@@ -1,0 +1,21 @@
+// DDComponentForAndroid构建
+rootProject.setProperty("mainmodulename", "app")
+rootProject.setProperty("buildType", "app")
+
+apply from: rootDir.getAbsolutePath() + "/project/apphost/apphost_base.gradle"
+apply plugin: 'com.longtech.iplugin'
+apply plugin: 'com.longtech.itransform'
+
+
+
+android {
+    defaultConfig {
+        applicationId "com.longtech.techstack"
+    }
+}
+
+// DDComponentForAndroid构建
+combuild {
+    applicationName = 'com.longtech.app.AppApplication'
+    isRegisterCompoAuto = true
+}

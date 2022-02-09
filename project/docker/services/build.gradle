@@ -1,0 +1,16 @@
+apply from: rootDir.getAbsolutePath() + "/project/docker/docker_base.gradle"
+
+// 路由ARouter支持
+apply plugin: 'kotlin-kapt'                                     // ARouter配置
+apply plugin: 'com.alibaba.arouter'                             // ARouter配置
+
+kapt {                                                          // ARouter配置
+    arguments {
+        arg("AROUTER_MODULE_NAME", project.getName())
+    }
+}
+
+dependencies {
+    implementation 'com.alibaba:arouter-api:1.5.2'              // ARouter配置
+    kapt 'com.alibaba:arouter-compiler:1.5.2'                   // ARouter配置
+}

@@ -1,0 +1,143 @@
+package com.longtech.taskmanager.practice;
+
+public class Demo {
+
+    public static void main(String[] args) {
+
+        //------------------------------------------------------------------------------------------
+        [TaskClient]
+        fun fetch(request): Task
+        fun start(task)
+        fun shutdown(task)
+        fun restart(task)
+        fun delete(task)
+
+        fun register(callback)
+        fun unregister(callback)
+
+        fun Task.register(callback)
+        fun Task.unresiter(callback)
+
+        Builder {
+            fun setMaxRequest(max)
+            fun switchUser(id)
+            fun taskFactory(taskFactiry)
+            fun taskCallFactory(taskCallFactory)
+            fun build()
+        }
+        //------------------------------------------------------------------------------------------
+
+        var request = Request.Builder().build();
+        var task = TaskManager.newTask(request);                                                    // TaskFactory: Request -> Task
+        task.start()
+        task.shutdown()
+        task.restart()
+        task.delete()
+        task.subscribe(observer)
+        task.unsubscribe(observer)
+        task.fetInfo() { taskInfo ->
+
+        }
+
+        //------------------------------------------------------------------------------------------
+        [Task]
+        var info = taskInfo()
+        var state = TaskState()
+        var observer = Observer()
+        var runningCallable = TaskCallable()
+        var initObserver = InitializeObserver()
+        var runningCallableLock = Object()
+
+        fun subscribe(observer) {
+            observer.callback {
+                TaskManager.onTaskStateChange(task)
+            }
+        }
+
+
+        [TaskManager]
+        var mapKey = HashMap<String, Task>
+        var mapUrl = HashMap<String, Task>
+
+        init {
+            loadDatabase()
+        }
+
+        fun loadDatabase() {
+
+            onLoaded()
+        }
+
+        fun onLoaded() {
+            mapKey.entries.forEach { task.onInitialized(info)}
+        }
+
+        fun onTaskStateChange(task) {
+            DatabaseProvider.handleMessage(task, taskState)
+            EventCenter.handleMessage(task, taskState)
+        }
+
+        fun fetch(): Task {
+        }
+
+        fun delete(task) {
+        }
+
+        //------------------------------------------------------------------------------------------
+        [EventCenter、DatabaseProvider]
+
+        EventCenter {
+            fun handleMessage(task, taskState) {
+
+            }
+
+            fun register(listener)
+
+            fun unregister(listener)
+        }
+
+        DatabaseProvider {
+            fun handleMessage(task, taskState) {
+                // create
+                // update
+                // delete
+            }
+
+            fun register(listener)
+
+            fun unregister(listener)
+        }
+
+        //------------------------------------------------------------------------------------------
+
+        [start]
+        var observer = Observer.Builder().build();
+        task.bind(observer);
+        observer.onBind((Disposable)task)
+
+        var scheduler = SchedulersFactory.create(policy)
+        var worker = scheduler.createWorker()
+        var disposableTask = new DisposeTask(task)
+        var dispose = worker.schedule(task, 0, TimeUtins.SECONDES)
+        task.setDisposable(dispose)
+
+        [shutdown]
+        var observer = Observer.Builder().build();
+        task.bind(observer);
+        observer.onBind((Disposable)task)
+
+        var scheduler = SchedulersFactory.create(policy)
+        var worker = scheduler.createWorker()
+        var callableTask = new DisposeTaskRunnable(task, TaskRunnable)                              // TaskRunnableFactory: Task -> TaskRunnable
+        var dispose = worker.schedule(task, 0, TimeUtins.SECONDES)
+        task.setDisposable(dispose)
+
+        //------------------------------------------------------------------------------------------
+
+        [TaskRunnable]
+        var disposeTaskRunnable = DisposeTaskRunnable(task, TaskRunnable)
+        var schedulerExecutor = SchedulerFactory.create(policy)
+        var future = schedulerExecutor.submimt(disposeTaskRunnable)
+        disposeTaskRunnable.setFuture(future)
+    }
+}

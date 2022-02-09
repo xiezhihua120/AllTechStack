@@ -1,0 +1,131 @@
+apply plugin: 'com.dd.comgradle'  // DDComponentForAndroid构建, 不需要在引用com.android.application或者com.android.library
+apply plugin: 'kotlin-android'
+
+def cfg = rootProject.ext.android // 工程配置
+
+android {
+    compileSdkVersion cfg.compileSdkVersion
+
+    defaultConfig {
+        applicationId "com.longtech.techstack"
+        minSdkVersion cfg.minSdkVersion
+        targetSdkVersion cfg.targetSdkVersion
+        versionCode cfg.versionCode
+        versionName cfg.versionName
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    ///////////////////////////////////////////////签名//////////////////////////////////////////////
+    signingConfigs {
+
+        debug {
+            storeFile file(rootDir.getAbsolutePath() + "/config/sign/debug.keystore")
+            storePassword "develop"
+            keyAlias "develop"
+            keyPassword "develop"
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+
+        release {
+            storeFile file(rootDir.getAbsolutePath() + "/config/sign/debug.keystore")
+            storePassword "develop"
+            keyAlias "develop"
+            keyPassword "develop"
+            v1SigningEnabled true
+            v2SigningEnabled true
+        }
+
+    }
+
+    buildTypes {
+
+        debug {
+            resValue "string", "app_name", "AT_Debug"
+            //是否混淆
+            minifyEnabled false
+            // 移除无用的resource文件
+            shrinkResources false
+            //Zipalign优化
+            zipAlignEnabled false
+            signingConfig signingConfigs.debug
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        devtest {
+            resValue "string", "app_name", "AT_Test"
+            //签名文件
+            signingConfig signingConfigs.release
+            //是否混淆
+            minifyEnabled false
+            //Zipalign优化
+            zipAlignEnabled false
+            // 移除无用的resource文件
+            shrinkResources false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        pre {
+            resValue "string", "app_name", "AT_Pre"
+            //签名文件
+            signingConfig signingConfigs.release
+            //是否混淆
+            minifyEnabled true
+            //Zipalign优化
+            zipAlignEnabled true
+            // 移除无用的resource文件
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+
+        release {
+            resValue "string", "app_name", "AT_Release"
+            //签名文件
+            signingConfig signingConfigs.release
+            //是否混淆
+            minifyEnabled true
+            //Zipalign优化
+            zipAlignEnabled true
+            // 移除无用的resource文件
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+}
+
+dependencies {
+    implementation project(':customui')
+    implementation project(':structure')
+    implementation project(':services')
+}
+
+// 路由ARouter支持
+apply plugin: 'kotlin-kapt'                                     // ARouter配置
+apply plugin: 'com.alibaba.arouter'                             // ARouter配置
+
+kapt {                                                          // ARouter配置
+    arguments {
+        arg("AROUTER_MODULE_NAME", project.getName())
+    }
+}
+
+dependencies {
+    implementation 'com.alibaba:arouter-api:1.5.2'              // ARouter配置
+    kapt 'com.alibaba:arouter-compiler:1.5.2'                   // ARouter配置
+}

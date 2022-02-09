@@ -1,0 +1,67 @@
+1、Android之旅 -- ARouter 使用介绍(一)
+https://www.jianshu.com/p/12c814ee58ec
+
+2、Android路由框架ARouter的集成、基本使用以及踩坑全过程
+https://www.jianshu.com/p/c57214448c7f
+
+3、Android跳转-ARouter详细使用教程
+http://www.javashuo.com/article/p-clryfobo-mh.html
+
+----------------------------------------------------------------------------------------------------
+配置过程：
+1、在android studio 的 module的 build.gradle 文件中添加
+defaultConfig {
+...
+    javaCompileOptions {
+        annotationProcessorOptions {
+            arguments= [AROUTER_MODULE_NAME: project.getName() ]
+        }
+    }
+}
+...
+dependencies {
+    // 替换成最新版本, 需要注意的是api
+    // 要与compiler匹配使用，均使用最新版可以保证兼容
+    compile 'com.alibaba:arouter-api:x.x.x'
+    annotationProcessor 'com.alibaba:arouter-compiler:x.x.x'
+    ...
+}
+----------------------------------------------------------------------------------------------------
+2、在需要 路由控制的 Activity 文件添加以下内容
+// 在支持路由的页面上添加注解(必选)
+// 这里的路径需要注意的是至少需要有两级，/xx/xx
+@Route(path = "/test/activity")
+public class YourActivity extend Activity {
+    ...
+}
+----------------------------------------------------------------------------------------------------
+3、在 app 启动的地方添加初始化, 尽可能早, 可以在 Application 中添加
+if (isDebug()) {           // 这两行必须写在init之前，否则这些配置在init过程中将无效
+    ARouter.openLog();     // 打印日志
+    ARouter.openDebug();   // 开启调试模式(如果在InstantRun模式下运行，必须开启调试模式！线上版本需要关闭,否则有安全风险)
+}
+ARouter.init(mApplication); // 尽可能早，推荐在Application中初始化
+----------------------------------------------------------------------------------------------------
+4、需要路由跳转的时候使用
+// 应用内简单的跳转(通过URL跳转在'进阶使用'中)
+ARouter.getInstance().build("/test/activity").navigation();
+// 跳转并携带参数
+ARouter.getInstance().build("/test/1")
+            .withLong("key1", 666L)
+            .withString("key3", "888")
+            .withObject("key4", new Test("Jack", "Rose"))
+            .navigation();
+----------------------------------------------------------------------------------------------------
+5、如果项目用到了混淆需要注意添加在混淆文件里的内容
+-keep public class com.alibaba.android.arouter.routes.**{*;}
+-keep class * implements com.alibaba.android.arouter.facade.template.ISyringe{*;}
+
+【核心原理拆解】
+Q: 解决了什么问题
+   在App进行了组件化拆分之后，组件A是看不到组件B中的java类的，而组件A又要使用组建B中java类的功能。
+   因此拆用了路由映射表的方式，将java类注册到路由表中，同时建立path与java类的关联，最后路由映射表下沉。
+   通过上面的技术方案，最终可以让A在路由表中找到java类（接口或反射），从而使用组件B中的java类
+
+Q: 有哪些优势
+   支持了路由跳转参数注解自动装包、支持跳转拦截器、支持服务自动装包，支持了分组逻辑
+

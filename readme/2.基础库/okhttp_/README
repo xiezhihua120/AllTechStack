@@ -1,0 +1,183 @@
+官网：https://square.github.io/okhttp/
+
+1、初识Okhttp和Retrofit
+https://www.jianshu.com/p/bf310b9cf558
+
+2、OKHttp 官方文档【一】
+https://xiaxl.blog.csdn.net/article/details/107702122
+
+3、OKHttp 官方文档【二】
+https://xiaxl.blog.csdn.net/article/details/107729634
+
+4、这一次，就彻底了解OkHttp与Retrofit吧！
+https://blog.csdn.net/c10WTiybQ1Ye3/article/details/112504136
+
+5、Android OkHttp源码解析入门教程（一）
+https://www.jianshu.com/p/867b11a962ee
+
+6、Android OkHttp源码解析入门教程（二）
+https://www.jianshu.com/p/dee87f477822
+
+7、参考：OkHttp讲解(三)-缓存策略
+https://www.jianshu.com/p/656e93929bae
+
+Q: 使用OkHttp，如何彻底掌握
+   1、what-how-why
+   2、根据使用场景、工作流程，抽象出思维简图
+   3、利用系统性思维，构建系统图
+
+Q: OKHttp解决了什么问题
+OkHttp是一个高效的HTTP客户端，是目前Android使用最广泛的网络框架。
+优点:
+•  支持Http1、Http2、Quic以及WebSocket；
+•  连接池复用底层TCP(Socket)，减少请求延时；
+•  无缝的支持GZIP减少数据流量；
+•  缓存响应数据减少重复的网络请求；
+•  请求失败自动重试主机的其他ip，自动重定向；
+
+Q: 核心原理拆解
+
+   元素：
+        -------------------------------------------应用层--------------------------------------------
+        OKHttpClient                       客户调用大管家
+        Request、RequestBody               客户的明确诉求
+        Response                           客户的最终结果
+
+        -------------------------------------------中间层--------------------------------------------
+        Call                               应用与网络层的桥梁                                            Interceptor       应用侧拦截器、网络侧拦截器，最终留给客户观察、修改流程的机会
+        RealCall                                                                                      EventListener     用于客户观察流程
+        AsyncCall                          RealCall中的Runnable，代表一个工作线程，是一个匿名内部类          Callback          应用层的回调
+
+        -------------------------------------------任务层--------------------------------------------
+        Dispatcher                         异步任务队列执行器，负责了任务调度+线程池执行（promoteAndExecute）
+        getResponseWithInterceptorChain    AsyncCall.run中任务工作的流程
+        RetryAndFollowUpInterceptor        先执行，看异常是否能恢复；能则重试，不能则异常；重试看看是不是重定向等
+        BridgeInterceptor                  对请求响应头做格式化处理，其中cookie和gzip压缩是在这里处理的
+        CacheInterceptor                   CacheStrategy，先看缓存是否过期，过期先看看if-modify-since，然后发起网络请求，进行缓存；缓存的维度是url
+        ConnectInterceptor                 构造通信对象Exchange，并在连接池中查找到了可用RealConnection，进行了Sockket.connet等，构造Exchange对象，存储到RealChain中
+        CallServerInterceptor              利用Exchange写入头部，写入request，获取response的长度，response.body数据的获取，是在应用层onResponse中得到的
+
+        -------------------------------------------网络层--------------------------------------------
+        RealConnectionPool                 管理Http请求的连接，用于查找可复用的连接、清理无用的连接等
+        RealConnection                     内部包含一个socket或者tunnel
+        ExchangeFinder                     查找一个通信，主要是到RealConnectionPool中查找
+        ExchangeCodec                      Http请求/响应的编解码器，主要是request/response到source与sink的转化与操作
+        Exchange                           管理连接与ExchangeCodec事件：写Header到Codec中、根据request创建sink、读响应头、
+        RequestBodySink                    请求数据写入到sink
+        ResponseBodySource                 响应数据读出到source
+
+
+
+        核心逻辑分析：
+        1、getResponseWithInterceptorChain
+                interceptors += client.interceptors                      // 应用拦截器
+                interceptors += RetryAndFollowUpInterceptor(client)
+                interceptors += BridgeInterceptor(client.cookieJar)
+                interceptors += CacheInterceptor(client.cache)
+                interceptors += ConnectInterceptor
+                if (!forWebSocket) {
+                  interceptors += client.networkInterceptors
+                }
+                interceptors += CallServerInterceptor(forWebSocket)
+
+          A.责任链实现：https://www.liaoxuefeng.com/wiki/1252599548343744/1281319474561057
+              Request(name, params)   Handler.process(request)   HandlerChain/.addHandler  .handlers   .process(request)
+              public class HandlerChain {
+                  private List<Handler> handlers = new ArrayList<>();
+                  public void addHandler(Handler handler) {
+                      this.handlers.add(handler);
+                  }
+
+                  public boolean process(Request request) {
+                      for (Handler handler : handlers) {
+                          Boolean r = handler.process(request);
+                          if (r != null) {
+                              // 如果返回TRUE或FALSE，处理结束:
+                              System.out.println(request + " " + (r ? "Approved by " : "Denied by ") + handler.getClass().getSimpleName());
+                              return r;
+                          }
+                      }
+                      throw new RuntimeException("Could not handle request: " + request);
+                  }
+              }
+
+          B.OKHttp中的责任链：请求、拦截器、拦截链条管理器
+              response Chain.process(request) {
+                return Handler.process(chain)
+              }
+
+          C.拦截器顺序：
+                应用拦截器：          应用层对请求响应的hook
+                重试拦截器：          失败重拾与重定向
+                桥接拦截器：          用户请求 -> 变成网络请求； 网络响应 -> 变成用户响应
+                缓存拦截器：
+                网络拦截器：          网络层对请求和响应的hook
+                服务器连接拦截器：     真正进行网络拦截的地方
+
+   关系：
+          应用层处理用户输入、中间层负责两层转化、任务层中主要是拦截器、网络层进行真正的请求
+
+   交互：
+
+Q: OKHttp中是如何处理缓存的？
+参考：HTTP协议头字段详解大全  https://zhuanlan.zhihu.com/p/98296474，核心内容在CacheStrategy中
+参考：图解Http缓存控制之max-age=0、no-cache、no-store区别  https://zhuanlan.zhihu.com/p/55623075
+参考：OkHttp讲解(三)-缓存策略  https://www.jianshu.com/p/656e93929bae
+参考：HTTP协议 https://www.kancloud.cn/spirit-ling/http-study/1412541
+参考：http的缓存机制 https://blog.51cto.com/xslwahaha/1631348
+参考：HTTP 缓存的新鲜度判断 https://www.coonote.com/http/http-cache-judgment.html
+参考：深入理解浏览器的缓存机制 https://blog.towavephone.com/deep-learn-browser-cache/
+
+1、Date代表Http响应创建时间
+2、Last-Modify代表资源更新时间
+3、if-modify-since需要传递last-modify，询问服务器是否用缓存，如果服务器返回304 Not Modify，那么可以用缓存
+4、Age代表缓存之后的年龄，即缓存了多久
+5、Expires代表服务端规定的过期时间
+6、max-age，限制缓存的年龄
+7、max-stale，客户端容忍的最大过期时间，即在max-age之后的续命时间，max-age+max-stale代表了最大有效寿命
+7、min-stale，标示了客户端不愿意接受新鲜度不多于当前的 age 加上 min-fresh 设定的时间之和的响应。即 [age, max-age + max-stale - min-stale], min-stale在死亡之前，需要保留的时间，此时间短哪不可用
+
+
+时间线如下：Date/Send      Receive     Now
+缓存的存活时间为：收到请求前的缓存年龄 + 请求响应的时间 + 当前距离上一次接受的时间
+
+新鲜度：max-age是相对于Date的的时间长度，expires是绝对的时间（逐渐被废弃）
+新鲜度的计算公式：max-age 或者 expires - Date
+
+其中age代表了年轻，fresh度代表了寿命，min-stale代表了新鲜度保留不可用期，[0, max-age + max-stale - min-stale]代表了age所在的有效年龄，其他为死亡年龄
+
+总结：在缓存拦截器中，先根据缓存的age来判断是否使用缓存，在根据if-modify-since等最追加请求头
+     1、如果要使用缓存，看看缓存cacheResponse是否存在，如果存在就返回，否则返回空
+     2、不用缓存则使用网络，进行网络请求
+        2.1 如果是HTTP_NOT_MODIFIED 304，那么要考虑网络响应与缓存响应合并
+        2.2 如果是其他响应，那么直接把网络响应缓存起来
+        2.3 如果是PATCH、MOVE等响应，那么需要把缓存移除掉
+
+Q: OKHttp中是进行存储的？
+1、存储是以url纬度进行换成的
+2、取出缓存时要根据url、method、headers来校验一下
+3、DiskLruCache
+
+
+Q: OKHttp中是如何处理连接的？
+1、首先是在ConnectInterceptor中创建连接，具体的过程是由ExchangeFinder在RealConnectionPool中去查找可用的连接的（过程有点复杂）
+2、查找到Exchange之后，将起存入到RealChain中
+3、在CallServerInterceptor中获取到Exchange，开始将request（请求头、请求体）写入通信中，并读取响应头
+4、返回response，在应用层的返回中解析responseBody
+
+
+Q: OKHttp有那些不足？
+    1）用户网络请求的接口配置繁琐，尤其是需要配置请求body，请求头，参数的时候；
+    2）数据解析过程需要用户手动拿到responsbody进行解析，不能复用；
+    3）无法适配自动进行线程的切换。
+
+
+
+其他：
+Exchange源码分析: 通信管理，包含ExchangeCode，RealConnection，其中可以利用连接进行source、sink的写入与读出操作
+
+
+ExchangeFinder源码分析：在RealConnectionPool中查找可复用的连接
+
+
+ExchangeCodec源码分析：对请求与响应进行编解码操作，参考 Http1ExchangeCodec

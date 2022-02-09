@@ -1,0 +1,12 @@
+apply from: rootDir.getAbsolutePath() + "/project/bussiness/components_base.gradle"
+
+// DDComponentForAndroid构建
+combuild {
+    applicationName = 'com.longtech.okhttp.runalone.application.OKHttpApplication'
+    isRegisterCompoAuto = true
+}
+
+dependencies {
+    api deps.squareup.okhttp.runtime                    //implementation 'com.squareup.okhttp3:okhttp:4.6.0'
+    api deps.squareup.okhttp.loggingInterceptor         //implementation 'com.squareup.okhttp3:logging-interceptor:4.6.0'
+}

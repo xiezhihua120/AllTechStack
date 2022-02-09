@@ -1,0 +1,28 @@
+// DDComponentForAndroid构建
+rootProject.setProperty("mainmodulename", "pad")
+rootProject.setProperty("buildType", "pad")
+
+apply from: rootDir.getAbsolutePath() + "/project/apphost/apphost_base.gradle"
+
+android {
+    defaultConfig {
+        applicationId "com.longtech.techpad"
+    }
+}
+
+dependencies {
+//    // 首页框架
+//    implementation project(':mainpad')
+//
+//    // 医疗组件
+//    implementation project(':consulation')
+//    implementation project(':education')
+//    implementation project(':news')
+//    implementation project(':recovery')
+}
+
+// DDComponentForAndroid构建
+combuild {
+    applicationName = 'com.longtech.patient.BaseApplication'
+    isRegisterCompoAuto = true
+}

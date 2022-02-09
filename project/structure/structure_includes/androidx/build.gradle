@@ -1,0 +1,29 @@
+apply from: rootDir.getAbsolutePath() + "/project/structure/structure_includes/modules_base.gradle"
+
+dependencies {
+
+    api deps.androidx.appcompat.runtime
+    api deps.androidx.appcompat.resources
+    api deps.androidx.core.runtime
+    api deps.androidx.core.ktx
+    api deps.androidx.fragment.runtime
+    api deps.androidx.fragment.ktx
+
+    api deps.androidx.vectordrawable.runtime
+    api deps.androidx.vectordrawable.animated
+    api deps.androidx.collection.runtime
+    api deps.androidx.collection.ktx
+    api deps.androidx.annotation
+    api deps.androidx.constraintlayout
+    api deps.androidx.recyclerview
+
+    api deps.androidx.lifecycle.extensions
+    api deps.androidx.lifecycle.viewmodelKtx
+    api deps.androidx.lifecycle.livedataKtx
+    api deps.androidx.lifecycle.commonJava8
+    //kapt deps.androidx.lifecycle.compiler
+
+    api deps.androidx.work.runtime
+    api deps.androidx.work.runtimeKtx
+
+}

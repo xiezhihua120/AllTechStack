@@ -1,0 +1,64 @@
+1、Android AOP三剑客之AspectJ
+https://www.jianshu.com/p/d43807ac33bd
+
+2、AOP开发——AspectJ的使用
+https://www.jianshu.com/p/c66f4e3113b3
+
+3、Aspectj 在Android中的简单使用（Java + Kotlin）
+https://www.it610.com/article/1304910206911680512.htm
+
+4、AspectJ Kotlin（验证了不行）
+https://www.jianshu.com/p/1c904a350110
+
+5、Android中Kotlin使用AspectJ的切面编程
+https://www.jianshu.com/p/8105c014995c
+
+
+aspectj核心逻辑拆解：
+要解决的主要问题，是针对一批目标对象，进行统一操作处理
+1、对象主要是类的方法，叫做切点
+2、目标的对象是有一定规则的，叫做连接点
+3、对目标对象进行一定的操作，叫做切面
+4、其中的操作，也叫做通知
+
+
+问：为什么我每次运行编译时，一直报错Invalid byte tag in constant pool，而且会自动生成一个ajcore.xxxxxxxxx.txt文件?
+答：需要升级aspectj
+
+
+
+【AspectJ Java版本】
+classpath 'com.longtech.stack:iaspectj:1.0.11'
+apply plugin: 'com.longteck.iaspectj'
+
+@Aspect
+public class CheckLoginAspect {
+    public static final String TAG = "CheckLoginAspect";
+
+    @Pointcut("execution(* com.longtech.app.MainActivity.onClick(..))")//方法切入点
+    public void methodAnnotated() {
+    }
+
+    @Around("methodAnnotated()")//在连接点进行方法替换
+    public void aroundJoinPoint(ProceedingJoinPoint joinPoint) throws Throwable {
+        Log.d(TAG, "intercept");
+        joinPoint.proceed();//执行原方法
+    }
+
+    @Before("execution(* android.app.Activity.on**(..))")
+    public void onActivityMethodBefore(JoinPoint joinPoint) throws Throwable {
+        String key = joinPoint.getSignature().toString();
+        Log.d(TAG, "onActivityMethodBefore: " + key);
+    }
+}
+
+【AspectJ Kotlin版本】
+classpath 'com.hujiang.aspectjx:gradle-android-plugin-aspectjx:2.0.10'
+apply plugin: 'android-aspectjx'
+apply plugin: 'kotlin-kapt'
+
+dependencies {
+    ...
+    implementation 'org.aspectj:aspectjrt:1.9.5'
+}
+备注：gradle版本升级到7.0.0，该插件已经不支持了，并且不维护，放弃kotlin的aop处理

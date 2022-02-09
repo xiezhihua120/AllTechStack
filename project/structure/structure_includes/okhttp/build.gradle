@@ -1,0 +1,6 @@
+apply from: rootDir.getAbsolutePath() + "/project/structure/structure_includes/modules_base.gradle"
+
+dependencies {
+    api deps.squareup.okhttp.runtime
+    api deps.squareup.okhttp.loggingInterceptor
+}

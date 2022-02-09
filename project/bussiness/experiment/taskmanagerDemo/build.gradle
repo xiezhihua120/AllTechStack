@@ -1,0 +1,13 @@
+apply from: rootDir.getAbsolutePath() + "/project/bussiness/components_base.gradle"
+// Todo: 只能在Application模式下打开
+apply plugin: 'com.longtech.iaspectj'
+
+// DDComponentForAndroid构建
+combuild {
+    applicationName = 'com.longtech.taskmanager.runalone.application.TaskManagerApplication'
+    isRegisterCompoAuto = true
+}
+
+dependencies {
+
+}

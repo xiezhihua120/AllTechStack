@@ -1,0 +1,7 @@
+apply from: rootDir.getAbsolutePath() + "/project/bussiness/components_base.gradle"
+
+// DDComponentForAndroid构建
+combuild {
+    applicationName = 'com.longtech.arouter.runalone.application.ArouterApplication'
+    isRegisterCompoAuto = true
+}

@@ -1,0 +1,40 @@
+// DDComponentForAndroid构建
+rootProject.setProperty("mainmodulename", "lite")
+rootProject.setProperty("buildType", "lite")
+
+apply from: rootDir.getAbsolutePath() + "/project/apphost/apphost_base.gradle"
+
+android {
+    defaultConfig {
+        applicationId "com.longtech.techstack"
+    }
+}
+
+dependencies {
+//    // 首页框架
+//    implementation project(':mainfull')
+//
+//    // 教育组件
+//    implementation project(':discovery')
+//    implementation project(':discuss')
+//    implementation project(':livedetail')
+//    implementation project(':mine')
+//    implementation project(':recommend')
+//    implementation project(':videodetail')
+//
+//    // 医疗组件
+//    implementation project(':homepage')
+//    implementation project(':camera')
+//    implementation project(':consulation')
+//    implementation project(':education')
+//    implementation project(':followup')
+//    implementation project(':news')
+//    implementation project(':patientdetail')
+//    implementation project(':recovery')
+}
+
+// DDComponentForAndroid构建
+combuild {
+    applicationName = 'com.longtech.patient.BaseApplication'
+    isRegisterCompoAuto = true
+}

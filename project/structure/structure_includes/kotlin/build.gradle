@@ -1,0 +1,8 @@
+apply from: rootDir.getAbsolutePath() + "/project/structure/structure_includes/modules_base.gradle"
+
+dependencies {
+    api deps.jetbrains.kotlin.stdLibJdk8
+    api deps.jetbrains.kotlin.reflect
+    api deps.jetbrains.kotlinx.couroutine
+    api deps.jetbrains.kotlinx.couroutineAndroid
+}

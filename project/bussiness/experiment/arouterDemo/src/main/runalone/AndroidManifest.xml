@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    package="com.longtech.arouter">
+
+    <application
+        android:name=".runalone.application.ArouterApplication"
+        android:allowBackup="true"
+        android:label="arouter"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.AppCompat.DayNight"
+        tools:replace="android:label">
+        <activity android:name=".applike.router.MainActivity">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!--ARouter配置-->
+            <intent-filter>
+                <action android:name="android.intent.action.ALLIN_DEEPLINK"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".applike.router.TargetActivity">
+        </activity>
+
+    </application>
+
+</manifest>

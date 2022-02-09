@@ -1,0 +1,175 @@
+dependencyResolutionManagement {
+    //repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        maven {
+            allowInsecureProtocol = true
+            url NEXUS_REPOSITORY_PUBLIC_URL
+        }
+    }
+}
+rootProject.name = "LongTech"
+
+//------------------------------------------------------------------------------------------------//
+/**
+ * 宿主层
+ */
+include ':app'
+include ':pad'
+include ':lite'
+project(':app').projectDir = new File('project/apphost/app')
+project(':pad').projectDir = new File('project/apphost/pad')
+project(':lite').projectDir = new File('project/apphost/lite')
+
+//------------------------------------------------------------------------------------------------//
+/**
+ * 业务层
+ */
+// 通用业务组件
+include ':account'
+include ':search'
+project(':account').projectDir = new File('project/bussiness/common/account')
+project(':search').projectDir = new File('project/bussiness/common/search')
+
+// 实验性组件
+include ':arouterDemo'
+include ':aspectjxDemo'
+include ':rxjavaDemo'
+include ':retrofitDemo'
+include ':okhttpDemo'
+include ':taskmanagerDemo'
+include ':rxjava4retrofitDemo'
+include ':glideDemo'
+include ':demo'
+project(':arouterDemo').projectDir = new File('project/bussiness/experiment/arouterDemo')
+project(':aspectjxDemo').projectDir = new File('project/bussiness/experiment/aspectjxDemo')
+project(':rxjavaDemo').projectDir = new File('project/bussiness/experiment/rxjavaDemo')
+project(':retrofitDemo').projectDir = new File('project/bussiness/experiment/retrofitDemo')
+project(':okhttpDemo').projectDir = new File('project/bussiness/experiment/okhttpDemo')
+project(':taskmanagerDemo').projectDir = new File('project/bussiness/experiment/taskmanagerDemo')
+project(':rxjava4retrofitDemo').projectDir = new File('project/bussiness/experiment/rxjava4retrofitDemo')
+project(':glideDemo').projectDir = new File('project/bussiness/experiment/glideDemo')
+project(':demo').projectDir = new File('project/bussiness/experiment/demo')
+
+// 资讯业务组件
+include ':discovery'
+include ':discuss'
+include ':livedetail'
+include ':mainfull'
+include ':mainlite'
+include ':mainpad'
+include ':mine'
+include ':recommend'
+include ':videodetail'
+project(':discovery').projectDir = new File('project/bussiness/education/discovery')
+project(':discuss').projectDir = new File('project/bussiness/education/discuss')
+project(':livedetail').projectDir = new File('project/bussiness/education/livedetail')
+project(':mainfull').projectDir = new File('project/bussiness/education/main/mainfull')
+project(':mainlite').projectDir = new File('project/bussiness/education/main/mainlite')
+project(':mainpad').projectDir = new File('project/bussiness/education/main/mainpad')
+project(':mine').projectDir = new File('project/bussiness/education/mine')
+project(':recommend').projectDir = new File('project/bussiness/education/recommend')
+project(':videodetail').projectDir = new File('project/bussiness/education/videodetail')
+
+// 拓展业务组件
+include ':camera'
+include ':consulation'
+include ':education'
+include ':followup'
+include ':homepage'
+include ':news'
+include ':patientdetail'
+include ':recovery'
+project(':camera').projectDir = new File('project/bussiness/orthopedics/camera')
+project(':consulation').projectDir = new File('project/bussiness/orthopedics/consulation')
+project(':education').projectDir = new File('project/bussiness/orthopedics/education')
+project(':followup').projectDir = new File('project/bussiness/orthopedics/followup')
+project(':homepage').projectDir = new File('project/bussiness/orthopedics/homepage')
+project(':news').projectDir = new File('project/bussiness/orthopedics/news')
+project(':patientdetail').projectDir = new File('project/bussiness/orthopedics/patientdetail')
+project(':recovery').projectDir = new File('project/bussiness/orthopedics/recovery')
+
+//------------------------------------------------------------------------------------------------//
+/**
+ * UI组件库
+ */
+include ':customui'
+include ':alertview'
+include ':idialog'
+project(':customui').projectDir = new File('project/customui/customui')
+project(':alertview').projectDir = new File('project/customui/widgets_maven/alertview')
+project(':idialog').projectDir = new File('project/customui/widgets_maven/idialog')
+
+//------------------------------------------------------------------------------------------------//
+/**
+ * 容器层
+ */
+include ':services'
+project(':services').projectDir = new File('project/docker/services')
+include ':flutter'
+project(':flutter').projectDir = new File('project/docker/flutter')
+include ':interfaces'
+project(':interfaces').projectDir = new File('project/docker/interfaces')
+
+//------------------------------------------------------------------------------------------------//
+/**
+ * 能力扩展层
+ */
+include ':glideloader'
+include ':imageloaderx'
+include ':downloader'
+include ':passport'
+include ':retrofitclient'
+project(':downloader').projectDir = new File('project/extension/downloader')
+project(':passport').projectDir = new File('project/extension/passport')
+project(':glideloader').projectDir = new File('project/extension/imageloaders/glideloader')
+project(':imageloaderx').projectDir = new File('project/extension/imageloaders/imageloaderx')
+project(':retrofitclient').projectDir = new File('project/extension/retrofitclient')
+
+//------------------------------------------------------------------------------------------------//
+/**
+ * 基础能力层
+ */
+include ':dependencies'
+include ':glide'
+include ':imageloader'
+include ':retrofit'
+project(':dependencies').projectDir = new File('project/repository/dependencies')
+project(':glide').projectDir = new File('project/repository/glide')
+project(':imageloader').projectDir = new File('project/repository/imageloader')
+project(':retrofit').projectDir = new File('project/repository/retrofit')
+
+//------------------------------------------------------------------------------------------------//
+/**
+ * 基础架构层
+ */
+// 系统基础
+include ':structure'
+include ':android'
+include ':androidx'
+include ':kotlin'
+include ':utils'
+include ':okhttp'
+project(':structure').projectDir = new File('project/structure/structure')
+project(':android').projectDir = new File('project/structure/structure_includes/android')
+project(':androidx').projectDir = new File('project/structure/structure_includes/androidx')
+project(':kotlin').projectDir = new File('project/structure/structure_includes/kotlin')
+project(':utils').projectDir = new File('project/structure/structure_includes/utils')
+project(':okhttp').projectDir = new File('project/structure/structure_includes/okhttp')
+
+// 插件
+include ':itransform'
+include ':iplugin'
+include ':iaspectj'
+project(':itransform').projectDir = new File('project/structure/gradle/itransform')
+project(':iplugin').projectDir = new File('project/structure/gradle/iplugin')
+project(':iaspectj').projectDir = new File('project/structure/aspectj/iaspectj')
+
+// 注解
+include ':bind-annotation'
+include ':bind-processor'
+include ':bind-library'
+project(':bind-annotation').projectDir = new File('project/structure/annotations/bind-annotation')
+project(':bind-processor').projectDir = new File('project/structure/annotations/bind-processor')
+project(':bind-library').projectDir = new File('project/structure/annotations/bind-library')
+//------------------------------------------------------------------------------------------------//
+

@@ -1,0 +1,24 @@
+apply from: rootDir.getAbsolutePath() + "/project/docker/docker_base.gradle"
+
+dependencies {
+
+    def buildType = rootProject.ext.buildType
+    if ("app".equals(buildType)) {
+        api project(':downloader')
+        api project(':glideloader')
+        api project(':passport')
+    }
+
+    if ("lite".equals(buildType)) {
+        api project(':downloader')
+        api project(':imageloaderx')
+        api project(':passport')
+    }
+
+    if ("pad".equals(buildType)) {
+        api project(':downloader')
+        api project(':glideloader')
+        api project(':passport')
+    }
+
+}

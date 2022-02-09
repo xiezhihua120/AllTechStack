@@ -1,0 +1,133 @@
+apply plugin: 'com.dd.comgradle'  // DDComponentForAndroid构建, 不需要在引用com.android.application或者com.android.library
+apply plugin: 'kotlin-android'
+
+def cfg = rootProject.ext.android // 工程配置
+
+android {
+    compileSdkVersion cfg.compileSdkVersion
+
+    defaultConfig {
+        minSdkVersion cfg.minSdkVersion
+        targetSdkVersion cfg.targetSdkVersion
+        versionCode cfg.versionCode
+        versionName cfg.versionName
+
+        //aar独立混淆文件
+        consumerProguardFiles "consumer-rules.pro"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
+    ///////////////////////////////////////////////签名//////////////////////////////////////////////
+    //    if (isRunAlone) {
+    //        signingConfigs {
+    //
+    //            debug_component {
+    //                storeFile file(rootDir.getAbsolutePath() + "/config/sign/debug.keystore")
+    //                storePassword "develop"
+    //                keyAlias "develop"
+    //                keyPassword "develop"
+    //                v1SigningEnabled true
+    //                v2SigningEnabled true
+    //            }
+    //
+    //            release_component {
+    //                storeFile file(rootDir.getAbsolutePath() + "/config/sign/debug.keystore")
+    //                storePassword "develop"
+    //                keyAlias "develop"
+    //                keyPassword "develop"
+    //                v1SigningEnabled true
+    //                v2SigningEnabled true
+    //            }
+    //
+    //        }
+    //
+    //        buildTypes {
+    //
+    //            debug {
+    //                //签名文件
+    //                signingConfig signingConfigs.debug_component
+    //                //是否混淆
+    //                minifyEnabled false
+    //                //Zipalign优化
+    //                zipAlignEnabled false
+    //                proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+    //            }
+    //
+    //            devtest {
+    //                //签名文件
+    //                signingConfig signingConfigs.release_component
+    //                //是否混淆
+    //                minifyEnabled false
+    //                //Zipalign优化
+    //                zipAlignEnabled false
+    //                proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+    //            }
+    //
+    //            pre {
+    //                //签名文件
+    //                signingConfig signingConfigs.release_component
+    //                //是否混淆
+    //                minifyEnabled true
+    //                //Zipalign优化
+    //                zipAlignEnabled true
+    //                proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+    //            }
+    //
+    //            release {
+    //                //签名文件
+    //                signingConfig signingConfigs.release_component
+    //                //是否混淆
+    //                minifyEnabled true
+    //                //Zipalign优化
+    //                zipAlignEnabled true
+    //                proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+    //            }
+    //        }
+    //    }
+}
+
+// 基础库对全业务模块支持
+dependencies {
+    api project(':services')
+    api project(':customui')
+    api project(':interfaces')
+    api project(':structure')
+}
+
+// 组件化ddcomponent支持
+dependencies {
+    api 'com.luojilab.ddcomponentx:componentlib:1.5.0', {       // DDComponentForAndroid构建
+        exclude group: 'com.android.support'
+        exclude group: 'org.jetbrains.kotlin'
+    }
+}
+
+// 路由ARouter支持
+apply plugin: 'kotlin-kapt'                                     // ARouter配置
+apply plugin: 'com.alibaba.arouter'                             // ARouter配置
+
+kapt {                                                          // ARouter配置
+    arguments {
+        arg("AROUTER_MODULE_NAME", project.getName())
+    }
+}
+
+dependencies {
+    implementation 'com.alibaba:arouter-api:1.5.2'              // ARouter配置
+    kapt 'com.alibaba:arouter-compiler:1.5.2'                   // ARouter配置
+}

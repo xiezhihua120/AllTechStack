@@ -1,0 +1,79 @@
+JavaPoet使用攻略
+https://weilu.blog.csdn.net/article/details/112429217
+
+1、Android 注解处理器使用攻略
+https://blog.csdn.net/qq_17766199/article/details/113816175
+
+2、Android 注解处理器
+https://www.jianshu.com/p/e11307ad5cfc
+
+3、Android开发—APT注解处理器详解
+https://www.jianshu.com/p/edcee1b80d1b
+
+4、秒懂ANDROID注解处理器
+https://www.freesion.com/article/28501278791/
+
+5、Android注解，这几篇文章就够了
+https://www.jianshu.com/p/8e46db1e0c96
+
+6、Android组件化方案（二）-注解处理器（APT重磅干货）
+https://www.jianshu.com/p/eefe62a0509d
+
+7、IOC依赖注入（一）— 手写ButterKnife框架
+https://blog.csdn.net/qq_22090073/article/details/104476822
+
+9、搭建Android客户端APP架构——《编译时APT技术》
+https://blog.csdn.net/muxaioxie/article/details/108813480
+
+10、注解和注解处理器
+https://www.jianshu.com/p/acbb293722bc
+
+11、Tracklytics 一个安卓埋点库
+https://gitee.com/Ubitar/Tracklytics
+
+
+【实践案例】
+https://www.jianshu.com/p/e11307ad5cfc
+https://www.jianshu.com/p/edcee1b80d1b
+
+
+
+
+注解处理器的核心问题：元素被标记了，如何遍历这些元素，如何进行处理
+1、如何遍历
+Processor  ->  类  ->  元素
+一个处理器要处理多个类，一个类中有多个标记元素，因此是1:N:N的关系
+采用的存储结构是List<类, List<标记，Element>>
+其中为了去重，也可以使用Map<String, List<id, Element>>这样的结构
+
+2、如何处理
+根据标记，动态生产java代码，生产TypeSpec和MethodSpec；也可以直接用字符串的方式生成代码
+
+3、生成代码目的
+例如视图绑定，其实就是不想写findViewById代码，那么这部分代码由注解处理器动态生成就好了
+因为生成的代码都是跟目标类相关的，因此基本上需要生产一个类+相关方法，例如Target_BindClass().bind(Target target);
+
+4、如何使用代码
+A、手动调用，可以用反射
+B、可以用transform，利用javassist字节码插桩的方式
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

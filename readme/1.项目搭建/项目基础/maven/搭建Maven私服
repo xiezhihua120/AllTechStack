@@ -1,0 +1,36 @@
+1、Android 打包上传Maven库
+https://www.jianshu.com/p/8018372d272c
+
+2、Android Studio将项目发布到Maven仓库
+https://blog.csdn.net/xmxkf/article/details/80674232
+
+3、发布Android library到maven仓库
+https://www.jianshu.com/p/55efccf1a15b
+https://blog.csdn.net/weixin_42600398/article/details/116738637
+https://blog.csdn.net/m0_37165550/article/details/120828221
+https://www.cnblogs.com/yuanpeng-java/p/10218822.html
+https://blog.csdn.net/aha_jasper/article/details/104925248
+
+4、Sonatype Nexus 私服的安装（MacOS 篇）
+https://www.jianshu.com/p/145959d448a8
+遇到的坑，是密码末尾实际包含一个%，用cat命令可以查看
+
+5、使用Nexus搭建Maven私服
+https://www.cnblogs.com/longview/p/6921633.html
+
+6、阿里云服务器使用nexus搭建maven私服
+https://blog.csdn.net/m0_37238428/article/details/102457095
+
+7、nexus3.x配置deployment角色
+https://blog.csdn.net/diaoge_v5/article/details/84584382
+
+
+实践记录：
+1、阿里云配置nexus服务
+2、本地配置maven上传
+3、nexus中配置中央代理仓库
+
+代码规范：
+每一个引入库都必须要要有版本号
+
+
