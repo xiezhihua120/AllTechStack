@@ -125,8 +125,25 @@ RequestBuilder：
 ----------------------------------------------------------------------------------------------------
 
 Q:请求内部的核心工作？
-Request：
-Target：
+SingleRequest.begin()
+
+如果进行中：那么不允许重复允许
+如果已完成：回调通知onResourceReady
+
+1、target.onLoadStared(drawable)
+2、target.getSize()
+3、request.onSizeReady
+      engine.load()
+
+      核心引擎加载过程: 特别注意它是加锁的
+      A、从一级内存缓存中加载：ActiveResources
+      B、从二级内存缓存中加载：MemoryCache
+      C、获取一个EnginJob开始
+	    创建一个DecodeJob任务
+	    启动解码工作（从网络获取资源 - 从磁盘缓存中获取资源）
+4、decodeJob.fetchGlideExecutor
+      executor.execute(decodeJob)
+     解码状态机工作过程：
 
 ----------------------------------------------------------------------------------------------------
 
