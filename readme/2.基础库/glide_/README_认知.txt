@@ -151,9 +151,45 @@ SingleRequest.begin()
 
 5、decodeJob.fetchGlideExecutor
       executor.execute(decodeJob)
-   核心逻辑：子线程任务包括启动、回调通知、暂停等；安装阶段划分又包括开始、网络获取、缓存获取、编码、结束等阶段
-           1、状态机逻辑解决阶段问题
-           2、操作、状态与回调解决客户控制问题
+   核心逻辑： 子线程任务包括启动、回调通知、暂停等；安装阶段划分又包括开始、网络获取、缓存获取、编码、结束等阶段
+            1、状态机逻辑解决阶段问题
+            2、操作、状态与回调解决客户控制问题
+
+            [上游]                     [自己]                        [下游]
+                                      DecodeJob
+                                      init
+            willDecodeFromCache
+            release
+                                      onEncodeComplete
+                                      onLoadFailed
+                                      releaseInternal
+
+                                      compareTo
+                                      getPriority
+            cancel
+            run
+                                      runWrapped
+                                      getNextGenerator
+                                      runGenerators
+                                      notifyFailed
+                                      notifyComplete
+                                      setNotifiedOrThrow
+                                      getNextStage
+
+                                      reschedule
+                                                                  onDataFetcherReady
+                                                                  onDataFetcherFailed
+                                     decodeFromRetrievedData
+                                     notifyEncodeAndRelease
+                                     decodeFromData
+                                     decodeFromFetcher
+                                     runLoadPath
+                                     getOptionsWithConfig
+                                     logWithTimeAndKey
+                                     logWithTimeAndKey
+
+            getVerifier
+
 
 ----------------------------------------------------------------------------------------------------
 
