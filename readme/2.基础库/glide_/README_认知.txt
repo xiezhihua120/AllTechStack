@@ -191,10 +191,38 @@ SingleRequest.begin()
             getVerifier
 
 
+   相关类：
+   DeferredEncodeManager            利用Encoder和Resource进行编码，写入缓存中
+   ReleaseManager                   释放、编码完成、失败都属于已完成
+   DecodeHelper                     解码器相关属性、策略、解码器Registry映射表
+   LoadData                         Key与DataFetcher组合
+   DataSource                       本地、远程、磁盘数据、磁盘资源、内存
+   DataFetcher                      加载、回调、取消
+   DataFetcherGenerator             启动下一个，取消、回调
+
+
+
 ----------------------------------------------------------------------------------------------------
+DecodeHelper：属性组合类；注册表获取加载器；
 
+    this.glideContext = glideContext;                                       // 上下文
 
+    this.model = model;                                                     // 数据
+    this.signature = signature;
+    this.width = width;
+    this.height = height;
+    this.resourceClass = resourceClass;
+    this.transcodeClass = (Class<Transcode>) transcodeClass;
 
+    this.diskCacheStrategy = diskCacheStrategy;                             // 存储
+    this.diskCacheProvider = diskCacheProvider;
 
+    this.priority = priority;                                               // 选项
+    this.options = options;
+    this.transformations = transformations;
+    this.isTransformationRequired = isTransformationRequired;
+    this.isScaleOnlyOrNoTransform = isScaleOnlyOrNoTransform;
 
 ----------------------------------------------------------------------------------------------------
+Registry
+
