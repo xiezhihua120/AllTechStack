@@ -252,4 +252,14 @@ DecodeHelper：属性组合类；注册表获取加载器；
 
 ----------------------------------------------------------------------------------------------------
 Registry
+model加载成data			ModelLoader
+data解码成resource		Decoder
+
+[model]					[data]					[resource]
+
+url						InputStream				Drawable
+Uri						ByteBuffer				Bitmap
+String					File					GifDrawable
+File					ParcelFileDescriptor	BitmapDrawable
+
 
