@@ -250,6 +250,50 @@ DecodeHelper：属性组合类；注册表获取加载器；
     this.isTransformationRequired = isTransformationRequired;
     this.isScaleOnlyOrNoTransform = isScaleOnlyOrNoTransform;
 
+    List<LoadData<?>> getLoadData() {
+        if (!isLoadDataSet) {
+          isLoadDataSet = true;
+          loadData.clear();
+          List<ModelLoader<Object, ?>> modelLoaders = glideContext.getRegistry().getModelLoaders(model);
+          //noinspection ForLoopReplaceableByForEach to improve perf
+          for (int i = 0, size = modelLoaders.size(); i < size; i++) {
+            ModelLoader<Object, ?> modelLoader = modelLoaders.get(i);
+            LoadData<?> current =
+                modelLoader.buildLoadData(model, width, height, options);
+            if (current != null) {
+              loadData.add(current);
+            }
+          }
+        }
+        return loadData;
+    }
+    分析：LoadData实际上是sourceKey和DataFetcher的组合，之所以能得到他们，也是根据model来匹配生成的。
+         更详细的，其实是model到Registry表中匹配ModelLoader，每个modelLoader.buildLoadData(model, width, height, options);
+         时，更具model生成了sourceKey。
+         因此，LoadData = sourceKey + DataFetcher
+
+    List<Key> getCacheKeys() {
+        if (!isCacheKeysSet) {
+          isCacheKeysSet = true;
+          cacheKeys.clear();
+          List<LoadData<?>> loadData = getLoadData();
+          //noinspection ForLoopReplaceableByForEach to improve perf
+          for (int i = 0, size = loadData.size(); i < size; i++) {
+            LoadData<?> data = loadData.get(i);
+            if (!cacheKeys.contains(data.sourceKey)) {
+              cacheKeys.add(data.sourceKey);
+            }
+            for (int j = 0; j < data.alternateKeys.size(); j++) {
+              if (!cacheKeys.contains(data.alternateKeys.get(j))) {
+                cacheKeys.add(data.alternateKeys.get(j));
+              }
+            }
+          }
+        }
+        return cacheKeys;
+    }
+    分析：利用LoadData提取了所有的sourceKey
+
 ----------------------------------------------------------------------------------------------------
 Registry
 model加载成data			ModelLoader
@@ -262,5 +306,26 @@ Uri						ByteBuffer				Bitmap                      Bitmap
 String					File					GifDrawable                 File
 File					ParcelFileDescriptor	BitmapDrawable
 
+private final ModelLoaderRegistry modelLoaderRegistry;                                              // model到data使用的ModelLoaders
+private final EncoderRegistry encoderRegistry;                                                      // data使用的Encoders
+private final ResourceDecoderRegistry decoderRegistry;                                              // data到resource使用的Encoders
+private final ResourceEncoderRegistry resourceEncoderRegistry;                                      // ？
+private final DataRewinderRegistry dataRewinderRegistry;                                            // 读取data的头部
+private final TranscoderRegistry transcoderRegistry;                                                // resourceClass到transcodeClass的transcoder
+private final ImageHeaderParserRegistry imageHeaderParserRegistry;                                  // 图片头部解析器
+
+private final ModelToResourceClassCache modelToResourceClassCache =new ModelToResourceClassCache(); // 保存的是[model、resource、transcode]所用得到的transcoders
+private final LoadPathCache loadPathCache = new LoadPathCache();                                    //
+private final Pool<List<Throwable>> throwableListPool = FactoryPools.threadSafeList();              //
+
 ----------------------------------------------------------------------------------------------------
+解码过程分析：
+
+Registry.loadPathCache
+    核心功能：从Registry中查找能够满足<data,resource,transcode>的LoadPath
+            其中，LoadPath本质是包含了一个DecodePath，后者中存放的是一组decoders
+
+Registry.dataRewinderRegistry
+
+
 
