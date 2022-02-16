@@ -202,6 +202,33 @@ SingleRequest.begin()
 
 
 
+   状态机：
+   ———————————————————————————————————————————————————————————————————————————————————————
+   runReason.INITIALIZE
+
+   INITIALIZE
+
+   RESOURCE_CACHE                       ResourceCacheGenerator
+
+   DATA_CACHE                           DataCacheGenerator
+
+   SOURCE
+
+   ———————————————————————————————————————————————————————————————————————————————————————
+   runReason.SWITCH_TO_SOURCE_SERVICE
+
+   SOURCE                               SourceGenerator
+
+   FINISHED
+
+   ———————————————————————————————————————————————————————————————————————————————————————
+   runReason.DECODE_DATA
+
+   解码                                  DecodeJob.decodeFromRetrievedData
+
+   ———————————————————————————————————————————————————————————————————————————————————————
+
+
 ----------------------------------------------------------------------------------------------------
 DecodeHelper：属性组合类；注册表获取加载器；
 
