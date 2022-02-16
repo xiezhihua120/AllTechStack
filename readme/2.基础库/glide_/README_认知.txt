@@ -255,11 +255,12 @@ Registry
 model加载成data			ModelLoader
 data解码成resource		Decoder
 
-[model]					[data]					[resource]
+[model]					[data]					[resource]                  [transcodedClass]
 
-url						InputStream				Drawable
-Uri						ByteBuffer				Bitmap
-String					File					GifDrawable
+url						InputStream				Drawable                    Drawable
+Uri						ByteBuffer				Bitmap                      Bitmap
+String					File					GifDrawable                 File
 File					ParcelFileDescriptor	BitmapDrawable
 
+----------------------------------------------------------------------------------------------------
 
