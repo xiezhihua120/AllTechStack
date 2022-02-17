@@ -25,7 +25,6 @@ Q:生命周期是如何管理的？
    RequestManager：构造器接受了参数Glide、LifeCycle、TreeNode、Context
 
    [-------------------------------------------]
-    @NonNull
     private RequestManager supportFragmentGet(@NonNull Context context, @NonNull androidx.fragment.app.FragmentManager fm, @Nullable Fragment parentHint, boolean isParentVisible) {
         SupportRequestManagerFragment current = this.getSupportRequestManagerFragment(fm, parentHint, isParentVisible);
         RequestManager requestManager = current.getRequestManager();
@@ -40,7 +39,6 @@ Q:生命周期是如何管理的？
     分析：首先查找可用的RequestManagerFragment，然后构建RequestManager，让两者建立关联，最终返回RequestManager
 
    [-------------------------------------------]
-   @NonNull
    private SupportRequestManagerFragment getSupportRequestManagerFragment(@NonNull androidx.fragment.app.FragmentManager fm, @Nullable Fragment parentHint, boolean isParentVisible) {
        SupportRequestManagerFragment current = (SupportRequestManagerFragment)fm.findFragmentByTag("com.bumptech.glide.manager");
        if (current == null) {
@@ -64,7 +62,6 @@ Q:生命周期是如何管理的？
         最后通过消息机制，发送到主线程中，来清理pendingSupportRequestManagerFragments，这样做的好处是防止fm方式创建了多个RequestManagerFragment
 
    [-------------------------------------------]
-   @Nullable
    private Fragment findSupportFragment(@NonNull View target, @NonNull FragmentActivity activity) {
       tempViewToSupportFragment.clear();
       findAllSupportFragmentsWithViews(activity.getSupportFragmentManager().getFragments(), tempViewToSupportFragment);
@@ -315,8 +312,8 @@ private final TranscoderRegistry transcoderRegistry;                            
 private final ImageHeaderParserRegistry imageHeaderParserRegistry;                                  // 图片头部解析器
 
 private final ModelToResourceClassCache modelToResourceClassCache =new ModelToResourceClassCache(); // 保存的是[model、resource、transcode]所用得到的transcoders
-private final LoadPathCache loadPathCache = new LoadPathCache();                                    //
-private final Pool<List<Throwable>> throwableListPool = FactoryPools.threadSafeList();              //
+private final LoadPathCache loadPathCache = new LoadPathCache();                                    // 保护一个DecodePath，其中包含一组decoders
+private final Pool<List<Throwable>> throwableListPool = FactoryPools.threadSafeList();              // ？
 
 ----------------------------------------------------------------------------------------------------
 解码过程分析：
@@ -326,6 +323,7 @@ Registry.loadPathCache
             其中，LoadPath本质是包含了一个DecodePath，后者中存放的是一组decoders
 
 Registry.dataRewinderRegistry
+    核心功能：针对data进行的一个封包和解包类，里面还是data
 
 
 
