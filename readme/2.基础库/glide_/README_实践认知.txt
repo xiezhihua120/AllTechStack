@@ -325,5 +325,107 @@ Registry.loadPathCache
 Registry.dataRewinderRegistry
     核心功能：针对data进行的一个封包和解包类，里面还是data
 
+----------------------------------------------------------------------------------------------------
+GifDrawable：
+GifDrawable  ->  GifState  ->  GifFrameLoader
+    [上游]								[自己]								[下游]
+                                        GifDrawable
+    getSize
+    getFirstFrame
+    setFrameTransformation
+    getFrameTransformation
+    getBuffer
+    getFrameCount
+    getFrameIndex
+    resetLoopCount
+
+    start							    startRunning
+    stop								stopRunning
+
+    setVisible
+    getIntrinsicWidth
+    getIntrinsicHeight
+
+    isRunning
+    setIsRunning
+                                        onBoundsChange
+                                        draw
+
+    setAlpha
+    setColorFilter
+                                        getDestRect
+                                        getPaint
+
+    getOpacity
+                                                                          findCallback
+                                                                          onFrameReady
+                                                                          notifyAnimationEndToListeners
+    getConstantState
+    recycle
+    isRecycled
+    setLoopCount
+
+    registerAnimationCallback
+    unregisterAnimationCallback
+    clearAnimationCallbacks
 
 
+GifFrameLoader:
+[上游]								[自己]								[下游]
+							         GifFrameLoader
+setFrameTransformation
+getFrameTransformation
+getFirstFrame
+
+subscribe
+unsubscribe
+
+getWidth
+getHeight
+getSize
+getCurrentIndex
+
+getFrameSize
+getBuffer
+getFrameCount
+getLoopCount
+								start
+								stop
+								clear
+getCurrentFrame
+								loadNextFrame
+								recycleFirstFrame
+setNextStartFromFirstFrame
+																		onFrameReady
+
+----------------------------------------------------------------------------------------------------
+资源的回收过程：
+
+public class GifDrawableResource extends DrawableResource<GifDrawable> implements Initializable {
+
+  public GifDrawableResource(GifDrawable drawable) {
+    super(drawable);
+  }
+
+  @Override
+  public Class<GifDrawable> getResourceClass() {
+    return GifDrawable.class;
+  }
+
+  @Override
+  public int getSize() {
+    return drawable.getSize();
+  }
+
+  @Override
+  public void recycle() {
+    drawable.stop();
+    drawable.recycle();
+  }
+
+  @Override
+  public void initialize() {
+    drawable.getFirstFrame().prepareToDraw();
+  }
+
+}

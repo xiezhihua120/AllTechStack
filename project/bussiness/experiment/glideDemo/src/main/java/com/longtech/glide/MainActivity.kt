@@ -65,7 +65,7 @@ class MainActivity : AppCompatActivity() {
         var gif = "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fc-ssl.duitang.com%2Fuploads%2Fitem%2F201701%2F20%2F20170120142750_2VYNQ.thumb.1000_0.gif&refer=http%3A%2F%2Fc-ssl.duitang.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1643189250&t=f0a3328cd9493f46fbd426ccf20c7af3"
         var jpg = "https://gimg2.baidu.com/image_search/src=http%3A%2F%2Fpic124.nipic.com%2Ffile%2F20170319%2F14707271_231154092000_2.jpg&refer=http%3A%2F%2Fpic124.nipic.com&app=2002&size=f9999,10000&q=a80&n=0&g=0n&fmt=jpeg?sec=1647510317&t=2a287879841a8f73820e5b1d60f614fc"
         var png = "https://img0.baidu.com/it/u=3576781080,361138154&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=500"
-        GlideImageLoader.getInstance().loadImage(this, png, image)
+        GlideImageLoader.getInstance().loadImage(this, gif, image)
     }
 
     override fun onStart() {
