@@ -429,3 +429,5 @@ public class GifDrawableResource extends DrawableResource<GifDrawable> implement
   }
 
 }
+
+----------------------------------------------------------------------------------------------------
