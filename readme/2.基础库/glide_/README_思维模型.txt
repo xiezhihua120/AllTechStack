@@ -22,3 +22,10 @@ API是说Glide库的采用流式语法、以及丰富的功能实现了图片加
    要点一：加载。Glide最本质的逻辑是从model获取到data，进而转化成resouce、transcodeClass，最终选择性的缓存到ResourceCache和DataCache中
    要点二：缓存。运行时从ActiveResouce、MemCache中获取，如果获取不到就进行数据加载过程
    要点三：回收。为了保证数据即使收回，采用Fragment来管理资源的生命周期
+
+场景一：加载png图片
+   解码的资源存放到了ResourceCache中，杀死APP后，glide会进入Engine加载流程，先从ResourceCache中加载
+
+场景二：加载gif图片
+   为什么能加载gif动画
+   在Engine的解码流出中，有一个ImageType解析过程，发现文件的头部有gif魔幻数标记，从而确定使用ByteBufferGifDecoder
