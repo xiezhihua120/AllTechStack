@@ -17,3 +17,8 @@ API是说Glide库的采用流式语法、以及丰富的功能实现了图片加
 第四层加载与解码
     原则：找到第一个可以处理数据的ModelLoader
          找到第一个可以解码的Decoder
+
+核心逻辑：
+   要点一：加载。Glide最本质的逻辑是从model获取到data，进而转化成resouce、transcodeClass，最终选择性的缓存到ResourceCache和DataCache中
+   要点二：缓存。运行时从ActiveResouce、MemCache中获取，如果获取不到就进行数据加载过程
+   要点三：回收。为了保证数据即使收回，采用Fragment来管理资源的生命周期
