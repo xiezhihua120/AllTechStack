@@ -1,0 +1,11 @@
+A low-cost Android screen adaptation solution (今日头条屏幕适配方案终极版，一个极低成本的 Android 屏幕适配方案).
+源码地址：https://github.com/JessYanCoding/AndroidAutoSize
+
+设计稿      ->      逻辑尺寸      ->      真实设备
+                    布局
+
+核心逻辑：代码和布局中应用逻辑尺寸，sdk将逻辑尺寸适配到真实尺寸。其中逻辑尺寸、设计稿尺寸一直，那么开发就不用做转化操作了。
+
+1、配置尺寸
+2、获取目标尺寸
+3、应用尺寸
