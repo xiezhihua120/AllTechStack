@@ -4,8 +4,20 @@ A low-cost Android screen adaptation solution (今日头条屏幕适配方案终
 设计稿      ->      逻辑尺寸      ->      真实设备
                     布局
 
-核心逻辑：代码和布局中应用逻辑尺寸，sdk将逻辑尺寸适配到真实尺寸。其中逻辑尺寸、设计稿尺寸一直，那么开发就不用做转化操作了。
 
+核心逻辑：代码和布局中应用逻辑尺寸，sdk将逻辑尺寸适配到真实尺寸。其中逻辑尺寸、设计稿尺寸一直，那么开发就不用做转化操作了。
 1、配置尺寸
 2、获取目标尺寸
 3、应用尺寸
+
+
+计算原理：
+Density-independent pixel (dp)独立像素密度。标准是160dip.即1dp对应1个pixel，计算公式如：px = dp * (dpi / 160)，屏幕密度越大，1dp对应 的像素点越多。
+上面的公式中有个dpi，dpi为DPI是Dots Per Inch（每英寸所打印的点数），也就是当设备的dpi为160的时候1px=1dp；
+
+
+参考：
+Android屏幕适配及DisplayMetrics解析：https://blog.csdn.net/hp910315/article/details/48501197
+Android 屏幕适配方案：https://blog.csdn.net/lmj623565791/article/details/45460089
+
+
