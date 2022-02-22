@@ -39,6 +39,7 @@ include ':okhttpDemo'
 include ':taskmanagerDemo'
 include ':rxjava4retrofitDemo'
 include ':glideDemo'
+include ':eventbusDemo'
 include ':demo'
 project(':arouterDemo').projectDir = new File('project/bussiness/experiment/arouterDemo')
 project(':aspectjxDemo').projectDir = new File('project/bussiness/experiment/aspectjxDemo')
@@ -48,6 +49,7 @@ project(':okhttpDemo').projectDir = new File('project/bussiness/experiment/okhtt
 project(':taskmanagerDemo').projectDir = new File('project/bussiness/experiment/taskmanagerDemo')
 project(':rxjava4retrofitDemo').projectDir = new File('project/bussiness/experiment/rxjava4retrofitDemo')
 project(':glideDemo').projectDir = new File('project/bussiness/experiment/glideDemo')
+project(':eventbusDemo').projectDir = new File('project/bussiness/experiment/eventbusDemo')
 project(':demo').projectDir = new File('project/bussiness/experiment/demo')
 
 // 资讯业务组件

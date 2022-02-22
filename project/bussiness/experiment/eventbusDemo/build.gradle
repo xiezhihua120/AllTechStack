@@ -1,0 +1,12 @@
+apply from: rootDir.getAbsolutePath() + "/project/bussiness/components_base.gradle"
+apply plugin: 'com.longtech.iaspectj'
+
+// DDComponentForAndroid构建
+combuild {
+    applicationName = 'com.longtech.eventbus.runalone.application.DemoApplication'
+    isRegisterCompoAuto = true
+}
+
+dependencies {
+
+}
