@@ -1,0 +1,7 @@
+阿里云ECS上搭建Maven私服
+
+NEXUS_REPOSITORY_RELEASE_URL=http://xshell.fun/repository/maven-releases/
+NEXUS_REPOSITORY_SNAPSHOT_URL=http://xshell.fun/repository/maven-snapshots/
+
+# Nexus Maven repository public
+NEXUS_REPOSITORY_PUBLIC_URL=http://xshell.fun/repository/maven-public/
