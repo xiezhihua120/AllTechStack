@@ -120,9 +120,7 @@ Public class EventPoster extends Runnable {
 	    try {
             while(true) {
                 PendingPost pendingPost = queue.poll(1000);
-                if (pendingPost != null) {
-                    invokeSubscriber(pendingPost)
-                } else {
+                if (pendingPost == null) {
                     synchronized(this) {
                         pendingPost = queue.poll();
                         if (pendingPost == null) {
@@ -132,6 +130,8 @@ Public class EventPoster extends Runnable {
                             invokeSubscriber(pendingPost)
                         }
                     }
+                } else {
+                    invokeSubscriber(pendingPost)
                 }
             }
 	    } catch(Exception e) {
