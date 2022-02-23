@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.util.Log
 import android.view.View
 import com.longtech.eventbus.applike.eventbus.ViewProvider
+import com.longtech.eventbus.eventbus.example1.MessageEvent
+import org.greenrobot.eventbus.EventBus
 
 class Example2 : ViewProvider.ViewHolder {
     val TAG: String = Example2::class.java.simpleName
@@ -34,6 +36,8 @@ class Example2 : ViewProvider.ViewHolder {
     }
 
     override fun onClick(view: View) {
-
+        var event = MessageEvent()
+        event.id = "120"
+        EventBus.getDefault().post(event)
     }
 }
