@@ -99,8 +99,9 @@ public class BackgroundPoster implements Runnable {
 消费者   Subscriber
 
 
-生产者     ->    事件     ->     队列
-                               投递器     ->     消费者
+生产者     ->    事件     ->      信封
+                                队列
+                                投递器     ->     消费者
 
 Public class EventPoster extends Runnable {
 
