@@ -98,6 +98,10 @@ public class BackgroundPoster implements Runnable {
 投递器   Executor
 消费者   Subscriber
 
+
+生产者     ->    事件     ->     队列
+                               投递器     ->     消费者
+
 Public class EventPoster extends Runnable {
 
 	public void enqueue(Object event, Subscription sunscription) {
