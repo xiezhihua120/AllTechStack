@@ -102,7 +102,7 @@ Public class EventPoster extends Runnable {
 
 	public void enqueue(Object event, Subscription sunscription) {
 		PendingPost pendingPost = PendingPost.abtain(event, subscription);
-                 synchronized(this) {
+        synchronized(this) {
 			queue.enqueue(pendingPost)
 			if (!running) {
 				running = true;
