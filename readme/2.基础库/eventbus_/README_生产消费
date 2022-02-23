@@ -89,3 +89,52 @@ public class BackgroundPoster implements Runnable {
     }
 3、消费者执行
     eventBus.invokeSubscriber(pendingPost);
+
+————————————————————————————————————————————————————————————————————————————————————————————————————
+
+生产者  Publisher
+事件      Event
+队列      Queue
+投递器   Executor
+消费者   Subscriber
+
+Public class EventPoster extends Runnable {
+
+	public void enqueue(Object event, Subscription sunscription) {
+		PendingPost pendingPost = PendingPost.abtain(event, subscription);
+                 synchronized(this) {
+			queue.enqueue(pendingPost)
+			if (!running) {
+				running = true;
+				executor.execute(this)
+			}
+		}
+	}
+
+	public void run() {
+	    try {
+            while(true) {
+                PendingPost pendingPost = queue.poll(1000);
+                if (pendingPost != null) {
+                    invokeSubscriber(pendingPost)
+                } else {
+                    synchronized(this) {
+                        pendingPost = queue.poll();
+                        if (pendingPost == null) {
+                            running = false;
+                            return;
+                        } else {
+                            invokeSubscriber(pendingPost)
+                        }
+                    }
+                }
+            }
+	    } catch(Exception e) {
+            e.printStack();
+            running = false
+	    }
+    }
+
+}
+
+
