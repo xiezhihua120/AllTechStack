@@ -196,7 +196,7 @@ ext {
                 'generator'   : "org.greenrobot:greendao-generator:${deps_versions.greendaoVersion}",
                 'gradlePlugin': "org.greenrobot:greendao-gradle-plugin:${deps_versions.greendaoVersion}",
             ],
-            'eventbus*' : 'org.greenrobot:eventbus*:3.0.0'
+            'eventbus' : 'org.greenrobot:eventbus:3.0.0'
         ],
 
         //Junit

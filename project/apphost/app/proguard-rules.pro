@@ -126,6 +126,14 @@
 -keep class * implements com.alibaba.android.arouter.facade.template.IProvider                      # 如果使用了 单类注入，即不定义接口实现 IProvider，需添加下面规则，保护实现
 
 
-
-
+#----------------------------------------------eventbus混淆-------------------------------------------
+-keepattributes *Annotation*
+-keepclassmembers class * {
+    @org.greenrobot.eventbus.Subscribe <methods>;
+}
+-keep enum org.greenrobot.eventbus.ThreadMode { *; }
+-keepclassmembers class org.greenrobot.eventbus.util.ThrowableFailureEvent {
+    <init>(java.lang.Throwable);
+}
+-keep class org.greenrobot.eventbus.android.AndroidComponentsImpl
 

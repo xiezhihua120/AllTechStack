@@ -149,12 +149,14 @@ include ':structure'
 include ':android'
 include ':androidx'
 include ':kotlin'
+include ':eventbus'
 include ':utils'
 include ':okhttp'
 project(':structure').projectDir = new File('project/structure/structure')
 project(':android').projectDir = new File('project/structure/structure_includes/android')
 project(':androidx').projectDir = new File('project/structure/structure_includes/androidx')
 project(':kotlin').projectDir = new File('project/structure/structure_includes/kotlin')
+project(':eventbus').projectDir = new File('project/structure/structure_includes/eventbus')
 project(':utils').projectDir = new File('project/structure/structure_includes/utils')
 project(':okhttp').projectDir = new File('project/structure/structure_includes/okhttp')
 
