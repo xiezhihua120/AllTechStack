@@ -99,3 +99,48 @@ name
 
 参考实体关系分析：https://www.processon.com/view/link/621722e87d9c081053d007ee
 
+————————————————————————————————————————————————————————————————————————————————————————————————————
+
+构建实体关系：
+订阅者在注册时，通过反射获取类所有的方法，在方法中查找@Subscribe方法，提取EventType
+1、获取方法：clazz.getDeclaredMethods()
+2、获取参数：method.getParameterTypes()
+3、获取注解：method.getAnnotation(Subscribe.class)
+4、注解属性：subscribeAnnotation.priority()
+
+private void findUsingReflectionInSingleClass(FindState findState) {
+        Method[] methods;
+        try {
+            // This is faster than getMethods, especially when subscribers are fat classes like Activities
+            methods = findState.clazz.getDeclaredMethods();
+        } catch (Throwable th) {
+            // Workaround for java.lang.NoClassDefFoundError, see https://github.com/greenrobot/EventBus/issues/149
+            methods = findState.clazz.getMethods();
+            findState.skipSuperClasses = true;
+        }
+        for (Method method : methods) {
+            int modifiers = method.getModifiers();
+            if ((modifiers & Modifier.PUBLIC) != 0 && (modifiers & MODIFIERS_IGNORE) == 0) {
+                Class<?>[] parameterTypes = method.getParameterTypes();
+                if (parameterTypes.length == 1) {
+                    Subscribe subscribeAnnotation = method.getAnnotation(Subscribe.class);
+                    if (subscribeAnnotation != null) {
+                        Class<?> eventType = parameterTypes[0];
+                        if (findState.checkAdd(method, eventType)) {
+                            ThreadMode threadMode = subscribeAnnotation.threadMode();
+                            findState.subscriberMethods.add(new SubscriberMethod(method, eventType, threadMode,
+                                    subscribeAnnotation.priority(), subscribeAnnotation.sticky()));
+                        }
+                    }
+                } else if (strictMethodVerification && method.isAnnotationPresent(Subscribe.class)) {
+                    String methodName = method.getDeclaringClass().getName() + "." + method.getName();
+                    throw new EventBusException("@Subscribe method " + methodName +
+                            "must have exactly 1 parameter but has " + parameterTypes.length);
+                }
+            } else if (strictMethodVerification && method.isAnnotationPresent(Subscribe.class)) {
+                String methodName = method.getDeclaringClass().getName() + "." + method.getName();
+                throw new EventBusException(methodName +
+                        " is a illegal @Subscribe method: must be public, non-static, and non-abstract");
+            }
+        }
+    }
