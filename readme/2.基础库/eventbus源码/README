@@ -32,6 +32,14 @@ How：系统解构
 生产者     ->    事件     ->      信封
                                 队列
                                 投递器     ->     消费者
+67
+从数据流向倒推：
+
+事件  ->  事件类型
+
+                [事件类型，订阅(订阅者+方法)]
+
+							->   方法.invoke(订阅者， 事件)
 
 ————————————————————————————————————————————————————————————————————————————————————————————————————
 EventBus
@@ -71,3 +79,23 @@ SubscriberMethodFinder：根据订阅者，查询其订阅方法
               订阅
 
 ————————————————————————————————————————————————————————————————————————————————————————————————————
+
+数据的存储：
+从配置的角度看，主要是三张实体关系表，EventType、Subscription、Subscriber
+
+[EventType]
+Id
+name
+
+[Subscription]
+id
+eventTypeId
+subscriberId
+subscriberMethodId
+
+[Subscriber]
+id
+name
+
+参考实体关系分析：https://www.processon.com/view/link/621722e87d9c081053d007ee
+
