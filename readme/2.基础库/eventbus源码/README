@@ -24,8 +24,9 @@ Why：
 
 How：系统解构
 生产者  Publisher
-事件      Event
-队列      Queue
+事件    Event
+信封    PendingPos
+队列    Queue
 投递器   Executor
 消费者   Subscriber
 

@@ -14,7 +14,8 @@ A low-cost Android screen adaptation solution (今日头条屏幕适配方案终
 计算原理：
 Density-independent pixel (dp)独立像素密度。标准是160dip.即1dp对应1个pixel，计算公式如：px = dp * (dpi / 160)，屏幕密度越大，1dp对应 的像素点越多。
 上面的公式中有个dpi，dpi为DPI是Dots Per Inch（每英寸所打印的点数），也就是当设备的dpi为160的时候1px=1dp；
-
+定义一：实际像素 / 逻辑像素
+定义二：每英寸像素点个数 / 160
 
 参考：
 Android屏幕适配及DisplayMetrics解析：https://blog.csdn.net/hp910315/article/details/48501197
