@@ -132,7 +132,7 @@ dependencies {
 
 //-------------------------------------BlockCanary支持-----------------------------------------------
 dependencies {
-    debugImplementation deps['blockcanary']    // BlockCanary支持
-    releaseImplementation deps['blockcanary-no-op']   // BlockCanary支持
+    // debugImplementation deps['blockcanary']    // BlockCanary支持
+    // releaseImplementation deps['blockcanary-no-op']   // BlockCanary支持
 }
 
