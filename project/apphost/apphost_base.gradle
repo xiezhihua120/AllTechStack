@@ -115,7 +115,7 @@ dependencies {
     implementation project(':services')
 }
 
-// 路由ARouter支持
+//-------------------------------------路由ARouter支持-----------------------------------------------
 apply plugin: 'kotlin-kapt'                                     // ARouter配置
 apply plugin: 'com.alibaba.arouter'                             // ARouter配置
 
@@ -129,3 +129,10 @@ dependencies {
     implementation 'com.alibaba:arouter-api:1.5.2'              // ARouter配置
     kapt 'com.alibaba:arouter-compiler:1.5.2'                   // ARouter配置
 }
+
+//-------------------------------------BlockCanary支持-----------------------------------------------
+dependencies {
+    debugImplementation deps['blockcanary']    // BlockCanary支持
+    releaseImplementation deps['blockcanary-no-op']   // BlockCanary支持
+}
+

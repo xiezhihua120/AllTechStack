@@ -18,6 +18,8 @@ class MainActivity : AppCompatActivity() {
     fun onClick() {
         Log.d("CheckLoginAspect", "onClick")
 
+        Thread.sleep(5000L)
+
         //ARouter.getInstance().build("/okhttp/main").navigation(this)
         ARouter.getInstance().build("/retrofit2/main").navigation(this)
     }

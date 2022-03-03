@@ -101,7 +101,7 @@ android {
     //    }
 }
 
-// 基础库对全业务模块支持
+//--------------------------------------基础库对全业务模块支持------------------------------------------
 dependencies {
     api project(':services')
     api project(':customui')
@@ -109,7 +109,7 @@ dependencies {
     api project(':structure')
 }
 
-// 组件化ddcomponent支持
+//--------------------------------------组件化ddcomponent支持-----------------------------------------
 dependencies {
     api 'com.luojilab.ddcomponentx:componentlib:1.5.0', {       // DDComponentForAndroid构建
         exclude group: 'com.android.support'
@@ -117,7 +117,7 @@ dependencies {
     }
 }
 
-// 路由ARouter支持
+//------------------------------------------路由ARouter支持-------------------------------------------
 apply plugin: 'kotlin-kapt'                                     // ARouter配置
 apply plugin: 'com.alibaba.arouter'                             // ARouter配置
 
