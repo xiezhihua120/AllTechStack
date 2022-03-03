@@ -12,4 +12,64 @@ Android ANR检测
 https://www.jianshu.com/p/9a6d79f9acad
 
 
+————————————————————————————————————————————————————————————————————————————————————————————————————
+原理：
+public final class BlockCanary {
 
+    public void start() {
+        if (!mMonitorStarted) {
+            mMonitorStarted = true;
+            Looper.getMainLooper().setMessageLogging(mBlockCanaryCore.monitor);
+        }
+    }
+
+    public void stop() {
+        if (mMonitorStarted) {
+            mMonitorStarted = false;
+            Looper.getMainLooper().setMessageLogging(null);
+            mBlockCanaryCore.stackSampler.stop();
+            mBlockCanaryCore.cpuSampler.stop();
+        }
+    }
+}
+分析：Looper在进行事件获取、投递的过程中，会进行打印-事件分发执行-打印的流程。因此只要获取打印的时间间隔差，即可计算出事
+     件分发执行的时间，如果超过3s即可认为消息分发执行超时了，即Block了
+
+————————————————————————————————————————————————————————————————————————————————————————————————————
+class LooperMonitor implements Printer {
+    @Override
+    public void println(String x) {
+        if (mStopWhenDebugging && Debug.isDebuggerConnected()) {
+            return;
+        }
+        if (!mPrintingStarted) {
+            mStartTimestamp = System.currentTimeMillis();
+            mStartThreadTimestamp = SystemClock.currentThreadTimeMillis();
+            mPrintingStarted = true;
+            startDump();
+        } else {
+            final long endTime = System.currentTimeMillis();
+            mPrintingStarted = false;
+            if (isBlock(endTime)) {
+                notifyBlockEvent(endTime);
+            }
+            stopDump();
+        }
+    }
+
+    private boolean isBlock(long endTime) {
+        return endTime - mStartTimestamp > mBlockThresholdMillis;
+    }
+
+    private void notifyBlockEvent(final long endTime) {
+        final long startTime = mStartTimestamp;
+        final long startThreadTime = mStartThreadTimestamp;
+        final long endThreadTime = SystemClock.currentThreadTimeMillis();
+        HandlerThreadFactory.getWriteLogThreadHandler().post(new Runnable() {
+            @Override
+            public void run() {
+                mBlockListener.onBlockEvent(startTime, endTime, startThreadTime, endThreadTime);
+            }
+        });
+    }
+}
