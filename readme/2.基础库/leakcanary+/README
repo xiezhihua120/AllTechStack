@@ -18,3 +18,6 @@ Android软件内的内存泄漏检测工具（系统、对象、内存资源、�
 
 How
 核心原理：如果一个弱引用对象被ObjectWatcher持有，且在持有之后的5s没有被垃圾回收器回收，那么LeakCanary认为这个对象可能是泄漏了
+1、监控告警策略：在前台时如果有5个retained对象，即发出告警；在后台时如果有1个retained对象，即发出通知告警
+2、打印heap信息：再要进行告警之前，先将java堆栈信息打印，并存储到.hprof文件中
+3、分析.hprof文件：使用Shark工具分析.hprof文件，并找出retained对象、泄漏路径
