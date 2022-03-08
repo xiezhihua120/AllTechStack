@@ -7,7 +7,7 @@ dependencyResolutionManagement {
         }
     }
 }
-rootProject.name = "LongTech"
+rootProject.name = "AllTech"
 
 //------------------------------------------------------------------------------------------------//
 /**
