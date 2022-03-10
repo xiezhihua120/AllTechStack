@@ -6,6 +6,7 @@ import android.os.Debug
 import android.util.Log
 import android.view.View
 import com.alibaba.android.arouter.launcher.ARouter
+import com.longtech.app.initialize.Base
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -21,5 +22,9 @@ class MainActivity : AppCompatActivity() {
 
         //ARouter.getInstance().build("/okhttp/main").navigation(this)
         ARouter.getInstance().build("/retrofit2/main").navigation(this)
+
+        var base = Base("xiezh", 11)
+        base.fullName = "1"
+
     }
 }

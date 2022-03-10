@@ -1,5 +1,301 @@
+1、监控库入口代码
+<application>
+    <provider
+        android:name="leakcanary.internal.AppWatcherInstaller$MainProcess"
+        android:authorities="${applicationId}.leakcanary-installer"
+        android:exported="false" />
+</application>
+分析：利用ContentProvider自动完成初始化特性，在onCreate中进行了程序初始化
+
+2、初始化代码封装到InternalAppWatcher中
+override fun onCreate(): Boolean {
+    val application = context!!.applicationContext as Application
+    InternalAppWatcher.install(application)
+    return true
+}
+
+3、利用application的生命周期回调，监控不再需要的activity对象：registerActivityLifecycleCallbacks
+fun install(application: Application) {
+    SharkLog.logger = DefaultCanaryLog()
+    SharkLog.d { "Installing AppWatcher" }
+    checkMainThread()
+    if (this::application.isInitialized) {
+      return
+    }
+    InternalAppWatcher.application = application
+
+    val configProvider = { AppWatcher.config }
+    ActivityDestroyWatcher.install(application, objectWatcher, configProvider)
+    FragmentDestroyWatcher.install(application, objectWatcher, configProvider)
+    onAppWatcherInstalled(application)
+}
+
+override fun invoke(application: Application) {
+    this.application = application
+
+    AppWatcher.objectWatcher.addOnObjectRetainedListener(this)
+
+    val heapDumper = AndroidHeapDumper(application, leakDirectoryProvider)
+
+    val gcTrigger = GcTrigger.Default
+
+    val configProvider = { LeakCanary.config }
+
+    val handlerThread = HandlerThread(LEAK_CANARY_THREAD_NAME)
+    handlerThread.start()
+    val backgroundHandler = Handler(handlerThread.looper)
+
+    heapDumpTrigger = HeapDumpTrigger(
+        application, backgroundHandler, AppWatcher.objectWatcher, gcTrigger, heapDumper,
+        configProvider
+    )
+    application.registerVisibilityListener { applicationVisible ->
+      this.applicationVisible = applicationVisible
+      heapDumpTrigger.onApplicationVisibilityChanged(applicationVisible)
+    }
+    registerResumedActivityListener(application)
+    addDynamicShortcut(application)
+
+    disableDumpHeapInTests()
+}
+
+4、分别针对不同系统版本，检测Fragment：AndroidOFragmentDestroyWatcher、AndroidXFragmentDestroyWatcher
+   利用activity的fragmentManager，监控Fragment的生命周期
+
+private val fragmentLifecycleCallbacks = object : FragmentManager.FragmentLifecycleCallbacks() {
+
+    override fun onFragmentViewDestroyed(
+      fm: FragmentManager,
+      fragment: Fragment
+    ) {
+      val view = fragment.view
+      if (view != null && configProvider().watchFragmentViews) {
+        objectWatcher.watch(
+            view, "${fragment::class.java.name} received Fragment#onDestroyView() callback " +
+            "(references to its views should be cleared to prevent leaks)"
+        )
+      }
+    }
+
+    override fun onFragmentDestroyed(
+      fm: FragmentManager,
+      fragment: Fragment
+    ) {
+      if (configProvider().watchFragments) {
+        objectWatcher.watch(
+            fragment, "${fragment::class.java.name} received Fragment#onDestroy() callback"
+        )
+      }
+    }
+  }
+
+  override fun invoke(activity: Activity) {
+    val fragmentManager = activity.fragmentManager
+    fragmentManager.registerFragmentLifecycleCallbacks(fragmentLifecycleCallbacks, true)
+  }
+
+5、activity的监控
+  private val lifecycleCallbacks = object : Application.ActivityLifecycleCallbacks by noOpDelegate() {
+      override fun onActivityDestroyed(activity: Activity) {
+        if (configProvider().watchActivities) {
+          objectWatcher.watch(
+              activity, "${activity::class.java.name} received Activity#onDestroy() callback"
+          )
+        }
+      }
+    }
+
+  @Synchronized fun watch(
+      watchedObject: Any,
+      description: String
+    ) {
+      if (!isEnabled()) {
+        return
+      }
+      removeWeaklyReachableObjects()
+      val key = UUID.randomUUID()
+          .toString()
+      val watchUptimeMillis = clock.uptimeMillis()
+      val reference =
+        KeyedWeakReference(watchedObject, key, description, watchUptimeMillis, queue)
+      SharkLog.d {
+        "Watching " +
+            (if (watchedObject is Class<*>) watchedObject.toString() else "instance of ${watchedObject.javaClass.name}") +
+            (if (description.isNotEmpty()) " ($description)" else "") +
+            " with key $key"
+      }
+
+      watchedObjects[key] = reference
+      checkRetainedExecutor.execute {
+        moveToRetained(key)
+      }
+    }
+  分析：这里利用的垃圾回收的特性，如果应用持有弱引用，当一个对象被回收之后，弱引用无法获取到该已经被回收的对象；
+       同时利用了WeakReference与ReferenceQueue的特性，当一个对象确定被回收，在回收会把弱引用存放到ReferenceQueue中，那么可以确认ReferenceQueue中的对象就是被回收了的
+       1、移除那些在RefercenceQueue中的弱引用，因为他们已经被回收了
+       2、记录activty，关联到WeakRefercence和ReferenceQueue中，前者代表待回收，后者代表已回收
+       3、使用checkRetainedExecutor启动监控，其本质上是一个5s定时的Handler消息
+
+         private val checkRetainedExecutor = Executor {
+           mainHandler.postDelayed(it, AppWatcher.config.watchDurationMillis)
+         }
+         val objectWatcher = ObjectWatcher(
+             clock = clock,
+             checkRetainedExecutor = checkRetainedExecutor,
+             isEnabled = { AppWatcher.config.enabled }
+         )
+       4、进入到监控流程中，如果对象被保留了下来
+         @Synchronized private fun moveToRetained(key: String) {
+           removeWeaklyReachableObjects()
+           val retainedRef = watchedObjects[key]
+           if (retainedRef != null) {
+             retainedRef.retainedUptimeMillis = clock.uptimeMillis()
+             onObjectRetainedListeners.forEach { it.onObjectRetained() }
+           }
+         }
+
+         override fun onObjectRetained() {
+           if (this::heapDumpTrigger.isInitialized) {
+             heapDumpTrigger.onObjectRetained()
+           }
+         }
+
+         private fun scheduleRetainedObjectCheck(
+             reason: String,
+             rescheduling: Boolean,
+             delayMillis: Long = 0L
+           ) {
+             val checkCurrentlyScheduledAt = checkScheduledAt
+             if (checkCurrentlyScheduledAt > 0) {
+               val scheduledIn = checkCurrentlyScheduledAt - SystemClock.uptimeMillis()
+               SharkLog.d { "Ignoring request to check for retained objects ($reason), already scheduled in ${scheduledIn}ms" }
+               return
+             } else {
+               val verb = if (rescheduling) "Rescheduling" else "Scheduling"
+               val delay = if (delayMillis > 0) " in ${delayMillis}ms" else ""
+               SharkLog.d { "$verb check for retained objects${delay} because $reason" }
+             }
+             checkScheduledAt = SystemClock.uptimeMillis() + delayMillis
+             backgroundHandler.postDelayed({
+               checkScheduledAt = 0
+               checkRetainedObjects(reason)
+             }, delayMillis)
+         }
+
+       5、开始检查retained对象
+       private fun checkRetainedObjects(reason: String) {
+           var retainedReferenceCount = objectWatcher.retainedObjectCount
+
+           if (retainedReferenceCount > 0) {
+             gcTrigger.runGc()
+             retainedReferenceCount = objectWatcher.retainedObjectCount
+           }
+
+           if (checkRetainedCount(retainedReferenceCount, config.retainedVisibleThreshold)) return
+
+           if (!config.dumpHeapWhenDebugging && DebuggerControl.isDebuggerAttached) {
+             onRetainInstanceListener.onEvent(DebuggerIsAttached)
+             showRetainedCountNotification(
+                 objectCount = retainedReferenceCount,
+                 contentText = application.getString(
+                     R.string.leak_canary_notification_retained_debugger_attached
+                 )
+             )
+             scheduleRetainedObjectCheck(
+                 reason = "debugger is attached",
+                 rescheduling = true,
+                 delayMillis = WAIT_FOR_DEBUG_MILLIS
+             )
+             return
+           }
+
+           val now = SystemClock.uptimeMillis()
+           val elapsedSinceLastDumpMillis = now - lastHeapDumpUptimeMillis
+           if (elapsedSinceLastDumpMillis < WAIT_BETWEEN_HEAP_DUMPS_MILLIS) {
+             onRetainInstanceListener.onEvent(DumpHappenedRecently)
+             showRetainedCountNotification(
+                 objectCount = retainedReferenceCount,
+                 contentText = application.getString(R.string.leak_canary_notification_retained_dump_wait)
+             )
+             scheduleRetainedObjectCheck(
+                 reason = "previous heap dump was ${elapsedSinceLastDumpMillis}ms ago (< ${WAIT_BETWEEN_HEAP_DUMPS_MILLIS}ms)",
+                 rescheduling = true,
+                 delayMillis = WAIT_BETWEEN_HEAP_DUMPS_MILLIS - elapsedSinceLastDumpMillis
+             )
+             return
+           }
+
+           SharkLog.d { "Check for retained objects found $retainedReferenceCount objects, dumping the heap" }
+           dismissRetainedCountNotification()
+           dumpHeap(retainedReferenceCount, retry = true)
+         }
+       分析：A、如果没有retained对象，那么退出检查
+            B、如果在调试模式下，仅"通知一下+延时再检查"
+            C、如果还在dump的间隔期内，那么"通知一下+延时再检查"
+            D、如果已过了dump的间隔期，那么取消通知，开始dump分析
+
+6、检查泄漏的触发时机
+  1、应用可见性改变时：onApplicationVisibilityChanged
+  2、触发watch时：onObjectRetained
+  3、进行堆栈dump时：dumpHeap
+
+7、dump文件并分析
+  private fun dumpHeap(
+    retainedReferenceCount: Int,
+    retry: Boolean
+  ) {
+    saveResourceIdNamesToMemory()
+    val heapDumpUptimeMillis = SystemClock.uptimeMillis()
+    KeyedWeakReference.heapDumpUptimeMillis = heapDumpUptimeMillis
+    val heapDumpFile = heapDumper.dumpHeap()
+    if (heapDumpFile == null) {
+      if (retry) {
+        scheduleRetainedObjectCheck(
+            reason = "failed to dump heap",
+            rescheduling = true,
+            delayMillis = WAIT_AFTER_DUMP_FAILED_MILLIS
+        )
+      } else {
+        SharkLog.d { "Failed to dump heap, will not automatically retry" }
+      }
+      showRetainedCountNotification(
+          objectCount = retainedReferenceCount,
+          contentText = application.getString(
+              R.string.leak_canary_notification_retained_dump_failed
+          )
+      )
+      return
+    }
+    lastDisplayedRetainedObjectCount = 0
+    lastHeapDumpUptimeMillis = SystemClock.uptimeMillis()
+    objectWatcher.clearObjectsWatchedBefore(heapDumpUptimeMillis)
+    HeapAnalyzerService.runAnalysis(application, heapDumpFile)
+  }
+  分析：因为已经获取了dump文件，那么可以把之前泄漏的对象清除掉了；之后进heap dump分析过程在Servic中进行
+
+      fun runAnalysis(
+        context: Context,
+        heapDumpFile: File
+      ) {
+        val intent = Intent(context, HeapAnalyzerService::class.java)
+        intent.putExtra(HEAPDUMP_FILE_EXTRA, heapDumpFile)
+        startForegroundService(context, intent)
+      }
+
+      private fun startForegroundService(
+        context: Context,
+        intent: Intent
+      ) {
+        if (SDK_INT >= 26) {
+          context.startForegroundService(intent)
+        } else {
+          context.startService(intent)
+        }
+      }
+    }
 
 
+  实际检测过程：scheduleRetainedObjectCheck -> checkRetainedObjects -> scheduleRetainedObjectCheck
 ————————————————————————————————————————————————————————————————————————————————————————————————————
 
 AppWatcherInstaller

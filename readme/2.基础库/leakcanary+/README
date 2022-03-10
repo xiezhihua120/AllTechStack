@@ -21,3 +21,13 @@ How
 1、监控告警策略：在前台时如果有5个retained对象，即发出告警；在后台时如果有1个retained对象，即发出通知告警
 2、打印heap信息：再要进行告警之前，先将java堆栈信息打印，并存储到.hprof文件中
 3、分析.hprof文件：使用Shark工具分析.hprof文件，并找出retained对象、泄漏路径
+
+总结
+1、LeakCanary2.0利用了ContentProvider无需显式初始化的特性来实现了自动注册
+2、通过application#registerActivityLifecycleCallbacks()对Activity的生命周期进行监听
+3、当Activity销毁时，将Activity添加到一个WeakReference中，利用WeakReference和ReferenceQueue的特性，如果一个对象除了弱引用以外，没有被其他对象所引用，当发生GC时，这个弱引用对象就会被回收，并且被回收掉的对象会被存放到ReferenceQueue中，所以当ReferenceQueue中有这个对象就代表这个对象已经被回收，反之就是没有被回收
+4、调用Android原生提供的捕获堆转储的方法Debug.dumpHprofData(heapDumpFile.absolutePath)
+5、使用解析库来分析 heap dump 文件
+
+代码逻辑架构：
+https://www.processon.com/view/link/6229940b1efad43be62f5cd5
