@@ -1,0 +1,65 @@
+----------------------------------------------------------------------------------------------------
+客户使用：特别注意，对CLEAN文件的操作、lruEntries内存操作都是同步方法，这样能够保证读写的线程安全；
+        而为了效率和安全使用了DIRTY文件，即编辑态下的文件，只有一个人能进行编辑，编辑完成之后通过fileRenameTo的方式写到CLEAN文件中
+
+public class TemplateDiskCache {
+    private static final String TAG = TemplateDiskCache.class.getSimpleName();
+
+    private static DiskLruCache mCache;
+
+
+    // 初始化：缓存目录，版本号，单个Key的Value个数，缓存大小，缓存文件个数
+    static {
+        try {
+            if (TemplateSDK.getContext().getApplicationContext() != null) {
+                File cacheDir = new File(PathUtils.getCacheDir(TemplateSDK.getContext().getApplicationContext()), StorageConst.TEMPLATE_CACHE_DIR);
+                mCache = DiskLruCache.open(cacheDir, 1, 1, StorageConst.TEMPLATE_CACHE_MAX_SIZE, StorageConst.TEMPLAGE_CACHE_MAX_COUNT);
+            }
+        } catch (Throwable t) {
+             LogUtil.e("TemplateObjectCache", "" + t);
+        }
+    }
+
+    // 通过mCache得到Entry，继而封装成Editor，其中set来用指定编辑的Key下第几个文件，commit用来将edit文件变成commit文件，即从DIRTY编辑状态变为COMMIT提交完成状态
+    public static void put(String uniqueId, String value) {
+        try {
+            if (mCache != null) {
+                DiskLruCache.Editor creator = mCache.edit(uniqueId);
+                creator.set(0, value);
+                creator.commit();
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+    }
+
+    // 通过mCache获取Entry，继而封装成Snapshot，这是一个同步方法
+    public static String get(String uniqueid) {
+        try {
+            if (mCache != null) {
+                DiskLruCache.Snapshot snapshot = mCache.get(uniqueid);
+                if (snapshot != null) {
+                    return snapshot.getString(0);
+                }
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    // 移除对应的Key所在Entry及资源，这也是一个同步方法
+    public static void remove(String uniqueId) {
+        try {
+            if (mCache != null) {
+                mCache.remove(uniqueId);
+            }
+        } catch (Throwable e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+----------------------------------------------------------------------------------------------------
+
+DiskLruCache框架逻辑整理：https://www.processon.com/view/link/623eb62d0e3e74078d4c435b

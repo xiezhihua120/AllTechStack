@@ -1,0 +1,131 @@
+————————————————————————————————————————————————————————————————————————————————————————————————————
+    private final int capacity;                                     // 容量
+    private final AtomicInteger count;                              // 数量量  ->  用数量：count=0空
+    transient LinkedBlockingQueue.Node<E> head;
+    private transient LinkedBlockingQueue.Node<E> last;
+    private final ReentrantLock takeLock;                           // 消费锁
+    private final Condition notEmpty;                               // 非空条件
+    private final ReentrantLock putLock;                            // 生产锁
+    private final Condition notFull;                                // 非满条件
+
+————————————————————————————————————————————————————————————————————————————————————————————————————
+
+    public LinkedBlockingQueue() {
+        this(2147483647);
+    }
+
+    public LinkedBlockingQueue(int capacity) {
+        this.count = new AtomicInteger();
+        this.takeLock = new ReentrantLock();
+        this.notEmpty = this.takeLock.newCondition();
+        this.putLock = new ReentrantLock();
+        this.notFull = this.putLock.newCondition();
+        if (capacity <= 0) {
+            throw new IllegalArgumentException();
+        } else {
+            this.capacity = capacity;
+            this.last = this.head = new LinkedBlockingQueue.Node((Object)null);
+        }
+    }
+
+————————————————————————————————————————————————————————————————————————————————————————————————————
+
+    public void put(E e) throws InterruptedException {
+        LinkedBlockingQueue.Node<E> node = new LinkedBlockingQueue.Node(e);
+        ReentrantLock putLock = this.putLock;
+        AtomicInteger count = this.count;
+
+        // 生产代码加锁互斥🔒
+        putLock.lockInterruptibly();
+
+        int c;
+        try {
+            // 如果队列满了，那么进入条件阻塞
+            while(count.get() == this.capacity) {
+                this.notFull.await();
+            }
+
+            // 如果队列不满，那么开始插入数据
+            this.enqueue(node);
+
+            // 队列容量+1
+            c = count.getAndIncrement();
+
+            // 队列容量不满信号
+            if (c + 1 < this.capacity) {
+                this.notFull.signal();
+            }
+        } finally {
+            // 生产代码解锁
+            putLock.unlock();
+        }
+
+        // 如果之前是空的，现在就不空了
+        if (c == 0) {
+            this.signalNotEmpty();
+        }
+    }
+
+    private void enqueue(LinkedBlockingQueue.Node<E> node) {
+        this.last = this.last.next = node;
+    }
+
+    private void signalNotEmpty() {
+        ReentrantLock takeLock = this.takeLock;
+        takeLock.lock();
+
+        try {
+            this.notEmpty.signal();
+        } finally {
+            takeLock.unlock();
+        }
+
+    }
+————————————————————————————————————————————————————————————————————————————————————————————————————
+
+    public E take() throws InterruptedException {
+        AtomicInteger count = this.count;
+        ReentrantLock takeLock = this.takeLock;
+
+        // 消费锁定🔒
+        takeLock.lockInterruptibly();
+
+        Object x;
+        int c;
+        try {
+            // 队列为空，那么阻塞
+            while(count.get() == 0) {
+                this.notEmpty.await();
+            }
+
+            // 队列非空，那么从队列中取出头部元素
+            x = this.dequeue();
+
+            // 队列计数-1
+            c = count.getAndDecrement();
+
+            // 队列非空通知
+            if (c > 1) {
+                this.notEmpty.signal();
+            }
+        } finally {
+            takeLock.unlock();
+        }
+
+        // 如果之前是满的，那么现在take操作之后就不满了
+        if (c == this.capacity) {
+            this.signalNotFull();
+        }
+
+        return x;
+    }
+
+    private E dequeue() {
+        LinkedBlockingQueue.Node<E> h = this.head;
+        LinkedBlockingQueue.Node<E> first = h.next;
+        h.next = h;
+        this.head = first;
+        E x = first.item;
+        first.item = null;
+        return x;
+    }
